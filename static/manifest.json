@@ -1,0 +1,16 @@
+{
+  "name": "Quant Terminal ML",
+  "short_name": "QuantML",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2422/2422796.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
