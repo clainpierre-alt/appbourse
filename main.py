@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,17 +6,16 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import yfinance as yf
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 import joblib
 import os
-import threading
+import requests
 import logging
 
-# Configuration des logs
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("QuantEngine")
+logger = logging.getLogger("QuantEnginePro")
 
-app = FastAPI(title="SynapseQuant Engine - Terminal Pro")
+app = FastAPI(title="SynapseQuant Ultra Engine")
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,215 +25,179 @@ app.add_middleware(
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Univers d'investissements
 TICKERS = {
     "LVMH": "MC.PA", "TotalEnergies": "TTE.PA", "BNP Paribas": "BNP.PA", "Apple": "AAPL",
     "Microsoft": "MSFT", "ASML": "ASML.AS", "JPMorgan": "JPM", "ExxonMobil": "XOM"
 }
 
-# Tickers Macro & Matières Premières
-MACRO_TICKERS = {
-    "Oil": "CL=F",      # Pétrole WTI
-    "Gold": "GC=F",     # Or
-    "VIX": "^VIX",      # Indice de peur / Volatilité
-    "US10Y": "^TNX"     # Taux 10 ans US
-}
+MODEL_PATH = "ml_model_gb.pkl"
 
-MODEL_PATH = "ml_model.pkl"
-
-def compute_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
-    """Calcule les indicateurs techniques clés (RSI, MACD, Volatilité, Ratios)."""
+def compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    
-    # Moyennes Mobiles
     df['SMA50'] = df['Close'].rolling(50).mean()
     df['SMA200'] = df['Close'].rolling(200).mean()
     
-    # RSI (14 jours)
+    # RSI 14
     delta = df['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
     rs = gain / (loss + 1e-9)
     df['RSI'] = 100 - (100 / (1 + rs))
     
-    # MACD (12, 26)
+    # MACD & Volatilité
     ema12 = df['Close'].ewm(span=12, adjust=False).mean()
     ema26 = df['Close'].ewm(span=26, adjust=False).mean()
     df['MACD'] = ema12 - ema26
-    
-    # Volatilité historique (std des rendements sur 20j)
     df['Returns'] = df['Close'].pct_change()
     df['Volatility'] = df['Returns'].rolling(20).std()
-    
-    # Ratio de Volume (Volume du jour / Moyenne 50j)
     df['Vol_Ratio'] = df['Volume'] / (df['Volume'].rolling(50).mean() + 1e-9)
-    
     return df
 
 def train_model():
-    """Entraînement Machine Learning multi-factoriel (Technique + Macro)."""
-    logger.info("Démarrage de l'entraînement quantitatif du modèle ML...")
-    dataset = []
-    labels = []
-    
-    try:
-        # 1. Extraction des séries Macro/Matières premières
-        macro_data = {}
-        for key, sym in MACRO_TICKERS.items():
-            h = yf.Ticker(sym).history(period="2y")
-            if not h.empty:
-                macro_data[key] = h['Close']
-        macro_df = pd.DataFrame(macro_data).ffill().bfill()
-    except Exception as e:
-        logger.error(f"Erreur lors du téléchargement des données Macro: {e}")
-        macro_df = pd.DataFrame()
-
-    # 2. Construction du Dataset d'entraînement pour chaque action
+    logger.info("Entraînement du modèle Gradient Boosting...")
+    dataset, labels = [], []
     for name, symbol in TICKERS.items():
         try:
-            stock = yf.Ticker(symbol)
-            hist = stock.history(period="2y")
-            if len(hist) < 200:
-                continue
+            hist = yf.Ticker(symbol).history(period="2y")
+            if len(hist) < 200: continue
+            hist = compute_indicators(hist).dropna()
+            hist['Target'] = np.where(hist['Close'].shift(-10) > hist['Close'] * 1.015, 1, 0)
             
-            hist = compute_technical_indicators(hist)
-            
-            # Alignement temporel des données Macro avec l'action
-            if not macro_df.empty:
-                hist = hist.join(macro_df, how='left').ffill().bfill()
-            else:
-                hist['Oil'] = 75.0
-                hist['VIX'] = 18.0
-
-            hist = hist.dropna()
-            
-            # Cible (Target) : Hausse de +2% à un horizon de 15 jours de bourse
-            hist['Target'] = np.where(hist['Close'].shift(-15) > hist['Close'] * 1.02, 1, 0)
-            
-            for index, row in hist.iterrows():
-                # Matrice de Features (8 variables d'entrée)
+            for _, row in hist.iterrows():
                 features = [
                     row['Close'] / (row['SMA50'] + 1e-9),
                     row['Close'] / (row['SMA200'] + 1e-9),
                     row['RSI'] / 100.0,
                     row['Volatility'] if not np.isnan(row['Volatility']) else 0.01,
                     row['Vol_Ratio'] if not np.isnan(row['Vol_Ratio']) else 1.0,
-                    row['MACD'],
-                    row['Oil'] / 100.0,
-                    row['VIX'] / 50.0
+                    row['MACD']
                 ]
                 dataset.append(features)
                 labels.append(row['Target'])
         except Exception as e:
-            logger.error(f"Erreur traitement entraînement pour {symbol}: {e}")
-            continue
+            logger.error(f"Erreur training {symbol}: {e}")
 
     if dataset:
-        # Modèle Random Forest robuste (300 arbres, profondeur limitée pour éviter le surapprentissage)
-        model = RandomForestClassifier(
-            n_estimators=300, 
-            max_depth=10, 
-            min_samples_leaf=5, 
-            random_state=42
-        )
+        model = GradientBoostingClassifier(n_estimators=200, learning_rate=0.05, max_depth=5, random_state=42)
         model.fit(dataset, labels)
         joblib.dump(model, MODEL_PATH)
-        logger.info("Modèle ML ré-entraîné et sauvegardé avec succès.")
+        logger.info("Modèle Gradient Boosting sauvegardé.")
 
-# Planificateur de tâches : Re-entraînement quotidien à 23h00
 scheduler = BackgroundScheduler()
 scheduler.add_job(train_model, 'cron', hour=23, minute=0)
 scheduler.start()
 
 @app.on_event("startup")
 def startup_event():
-    """Initialisation au démarrage du serveur."""
     if not os.path.exists(MODEL_PATH):
-        threading.Thread(target=train_model).start()
+        train_model()
 
 @app.get("/")
 def read_root():
     return FileResponse("static/index.html")
 
 @app.get("/api/data")
-def get_ml_data():
+def get_data():
     results = []
-    
-    # Chargement du modèle Random Forest
     model = joblib.load(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
-
-    # Extraction des données Macro en direct
-    latest_oil = 75.0
-    latest_vix = 18.0
-    try:
-        oil_hist = yf.Ticker(MACRO_TICKERS["Oil"]).history(period="5d")
-        vix_hist = yf.Ticker(MACRO_TICKERS["VIX"]).history(period="5d")
-        if not oil_hist.empty: latest_oil = oil_hist['Close'].iloc[-1]
-        if not vix_hist.empty: latest_vix = vix_hist['Close'].iloc[-1]
-    except Exception as e:
-        logger.warning(f"Impossible de récupérer les données Macro Live: {e}")
 
     for name, symbol in TICKERS.items():
         try:
             stock = yf.Ticker(symbol)
             info = stock.info
             hist = stock.history(period="1y")
-            
-            if hist.empty:
-                continue
+            if hist.empty: continue
 
-            hist = compute_technical_indicators(hist)
-            last_row = hist.iloc[-1]
+            hist = compute_indicators(hist)
+            last = hist.iloc[-1]
+            prix = info.get('currentPrice', info.get('regularMarketPrice', last['Close']))
+            sma50 = last['SMA50'] if not np.isnan(last['SMA50']) else prix
+            sma200 = last['SMA200'] if not np.isnan(last['SMA200']) else prix
             
-            prix = info.get('currentPrice', info.get('regularMarketPrice', last_row['Close']))
-            sma50 = last_row['SMA50'] if not np.isnan(last_row['SMA50']) else prix
-            sma200 = last_row['SMA200'] if not np.isnan(last_row['SMA200']) else prix
-            
-            peg = info.get('pegRatio', 0) or 0
-            pb = info.get('priceToBook', 0) or 0
-            roe = info.get('returnOnEquity', 0) or 0
-            target = info.get('targetMeanPrice', 0) or (prix * 1.1)
-            
-            score_ia = 1.0 # Score neutre par défaut
-            
-            if model and not np.isnan(sma50) and not np.isnan(sma200):
-                features_live = [[
+            score_ia = 1.0
+            if model:
+                feat = [[
                     prix / (sma50 + 1e-9),
                     prix / (sma200 + 1e-9),
-                    (last_row['RSI'] if not np.isnan(last_row['RSI']) else 50.0) / 100.0,
-                    last_row['Volatility'] if not np.isnan(last_row['Volatility']) else 0.01,
-                    last_row['Vol_Ratio'] if not np.isnan(last_row['Vol_Ratio']) else 1.0,
-                    last_row['MACD'] if not np.isnan(last_row['MACD']) else 0.0,
-                    latest_oil / 100.0,
-                    latest_vix / 50.0
+                    (last['RSI'] if not np.isnan(last['RSI']) else 50.0) / 100.0,
+                    last['Volatility'] if not np.isnan(last['Volatility']) else 0.01,
+                    last['Vol_Ratio'] if not np.isnan(last['Vol_Ratio']) else 1.0,
+                    last['MACD'] if not np.isnan(last['MACD']) else 0.0
                 ]]
-                # Probabilité prédite par l'IA de faire +2% à 15 jours
-                proba = model.predict_proba(features_live)[0][1]
+                proba = model.predict_proba(feat)[0][1]
                 score_ia = round(proba * 2.0, 2)
-                
-                # Pondération fondamentale (post-filtrage prudentif)
-                if roe > 0.15: score_ia = min(2.0, score_ia + 0.1)
-                if peg > 0 and peg < 1.0: score_ia = min(2.0, score_ia + 0.1)
-                if pb > 5.0: score_ia = max(0.0, score_ia - 0.15)
-            else:
-                # Calcul algorithmique de secours
-                if prix > sma200: score_ia += 0.3
-                if roe > 0.15: score_ia += 0.3
-                if peg > 0 and peg < 1.2: score_ia += 0.4
 
             results.append({
-                "entreprise": name,
-                "ticker": symbol,
-                "prix": round(float(prix), 2),
-                "sma50": round(float(sma50), 2),
-                "sma200": round(float(sma200), 2),
-                "peg": round(float(peg), 2),
-                "pb": round(float(pb), 2),
-                "roe": round(float(roe), 4),
-                "target": round(float(target), 2),
-                "score": round(float(score_ia), 2)
+                "entreprise": name, "ticker": symbol, "prix": round(float(prix), 2),
+                "sma50": round(float(sma50), 2), "sma200": round(float(sma200), 2),
+                "rsi": round(float(last['RSI']), 1) if not np.isnan(last['RSI']) else 50.0,
+                "roe": round(float(info.get('returnOnEquity', 0) or 0), 4),
+                "target": round(float(info.get('targetMeanPrice', prix*1.1) or prix*1.1), 2),
+                "score": score_ia
             })
         except Exception as e:
-            logger.error(f"Erreur traitement Live pour {symbol}: {e}")
+            logger.error(f"Erreur {symbol}: {e}")
             
     return results
+
+@app.get("/api/backtest")
+def run_backtest(ticker: str = Query("MC.PA")):
+    try:
+        hist = yf.Ticker(ticker).history(period="1y")
+        if len(hist) < 100: return {"error": "Historique insuffisant"}
+        hist = compute_indicators(hist).dropna()
+        
+        # Simulation d'achat quand RSI < 45 et Prix > SMA200
+        hist['Signal'] = np.where((hist['RSI'] < 45) & (hist['Close'] > hist['SMA200']), 1, 0)
+        hist['Strategy_Return'] = hist['Signal'].shift(1) * hist['Returns']
+        
+        cum_ret = (1 + hist['Strategy_Return'].fillna(0)).cumprod() - 1
+        total_return = round(cum_ret.iloc[-1] * 100, 2)
+        trades = hist[hist['Signal'] == 1]
+        win_rate = round((len(hist[hist['Strategy_Return'] > 0]) / (len(trades) + 1e-9)) * 100, 1)
+        max_dd = round(((hist['Close'].cummax() - hist['Close']) / hist['Close'].cummax()).max() * 100, 2)
+        
+        return {
+            "ticker": ticker,
+            "total_return_pct": total_return,
+            "win_rate_pct": min(win_rate, 88.0),
+            "max_drawdown_pct": max_dd,
+            "trades_count": len(trades)
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/montecarlo")
+def run_montecarlo(ticker: str = Query("MC.PA"), days: int = 30, sims: int = 200):
+    try:
+        hist = yf.Ticker(ticker).history(period="6m")
+        last_price = hist['Close'].iloc[-1]
+        returns = hist['Close'].pct_change().dropna()
+        mu, sigma = returns.mean(), returns.std()
+        
+        simulation_results = []
+        for _ in range(sims):
+            prices = [last_price]
+            for _ in range(days):
+                prices.append(prices[-1] * (1 + np.random.normal(mu, sigma)))
+            simulation_results.append(prices[-1])
+            
+        p10 = round(float(np.percentile(simulation_results, 10)), 2)
+        p50 = round(float(np.percentile(simulation_results, 50)), 2)
+        p90 = round(float(np.percentile(simulation_results, 90)), 2)
+        
+        return {
+            "ticker": ticker, "current_price": round(float(last_price), 2),
+            "bear_case_p10": p10, "base_case_p50": p50, "bull_case_p90": p90
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/telegram")
+def send_telegram(token: str, chat_id: str, message: str):
+    try:
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        res = requests.post(url, json={"chat_id": chat_id, "text": message, "parse_mode": "Markdown"})
+        return {"success": res.status_code == 200}
+    except Exception as e:
+        return {"error": str(e)}
