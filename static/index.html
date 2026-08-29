@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#09090b">
-  <link rel="manifest" href="/static/manifest.json">
-  <title>SynapseQuant OS - Financial Terminal</title>
-  
+  <title>SynapseQuant OS</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -17,12 +16,6 @@
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
     
-    .ambient-glow {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      background: radial-gradient(circle at 50% -20%, rgba(99, 102, 241, 0.15), transparent 70%),
-                  radial-gradient(circle at 0% 100%, rgba(16, 185, 129, 0.08), transparent 50%);
-    }
-
     .glass-panel { background: rgba(18, 18, 20, 0.75); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
     .glass-card { background: rgba(24, 24, 27, 0.55); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.06); }
 
@@ -33,48 +26,57 @@
     .card-back { transform: rotateY(180deg); }
 
     .no-scrollbar::-webkit-scrollbar { display: none; }
-    .tab-active { animation: fadeIn 0.3s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body class="text-zinc-100 pb-28 pt-4 relative">
 
-  <div id="ambient-bg" class="ambient-glow"></div>
-
   <div class="max-w-7xl mx-auto px-4 relative z-10">
     
-    <!-- HEADER -->
-    <header class="glass-panel rounded-3xl p-4 mb-4 flex justify-between items-center">
-      <div class="flex items-center gap-3">
-        <div class="h-10 w-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-          <i class="fa-solid fa-atom text-white text-lg"></i>
+    <!-- HEADER AVEC COMMUTATEUR PEA / CTO EN 1 CLIC -->
+    <header class="glass-panel rounded-3xl p-4 mb-4 flex flex-col md:flex-row justify-between items-center gap-3">
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+            <i class="fa-solid fa-atom text-white text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold tracking-tight">Synapse<span class="text-emerald-400">Quant</span></h1>
+            <p class="text-[10px] text-zinc-400 font-mono" id="market-mood">Initialisation du Terminal OS...</p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-xl font-bold tracking-tight">Synapse<span class="text-emerald-400">Quant</span></h1>
-          <p class="text-[10px] text-zinc-400 font-mono flex items-center gap-1.5" id="market-mood">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Anayse des Marchés Mondiaux...
-          </p>
-        </div>
+
+        <!-- TELEGRAM MOBILE -->
+        <button onclick="openTelegramModal()" class="md:hidden px-3 py-1.5 rounded-2xl bg-zinc-900 border border-zinc-700/60 text-sky-400 text-xs font-mono">
+          <i class="fa-paper-plane"></i>
+        </button>
+      </div>
+
+      <!-- TOGGLE 1-CLICK PEA / CTO -->
+      <div class="flex items-center gap-3 bg-zinc-950 p-1.5 rounded-2xl border border-zinc-800 w-full md:w-auto justify-center">
+        <button onclick="setAccountMode('PEA')" id="btn-mode-pea" class="flex-1 md:flex-none px-4 py-1.5 rounded-xl text-xs font-mono font-bold transition-all bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid fa-piggy-bank mr-1.5"></i>PEA (Europe)
+        </button>
+        <button onclick="setAccountMode('CTO')" id="btn-mode-cto" class="flex-1 md:flex-none px-4 py-1.5 rounded-xl text-xs font-mono text-zinc-400 hover:text-white transition-all">
+          <i class="fa-solid fa-globe mr-1.5"></i>CTO (Monde)
+        </button>
       </div>
       
-      <button onclick="triggerSound('pop'); openTelegramModal()" class="px-3.5 py-2 rounded-2xl bg-zinc-900 border border-zinc-700/60 text-sky-400 text-xs font-mono flex items-center gap-2 active:scale-95 transition">
-        <i class="fa-paper-plane"></i> <span class="hidden md:inline">Alertes</span>
+      <button onclick="openTelegramModal()" class="hidden md:flex px-3.5 py-2 rounded-2xl bg-zinc-900 border border-zinc-700/60 text-sky-400 text-xs font-mono items-center gap-2 active:scale-95 transition">
+        <i class="fa-paper-plane"></i> <span>Alertes</span>
       </button>
     </header>
 
-    <!-- CHARGEMENT -->
-    <div id="loading" class="flex flex-col items-center justify-center py-28">
-      <i class="fa-solid fa-circle-notch fa-spin text-4xl text-indigo-500 mb-4"></i>
-      <p class="text-xs text-zinc-400 font-mono tracking-widest uppercase">Analyse Multi-Marchés & Inférence IA...</p>
+    <!-- SPINNER -->
+    <div id="loading" class="flex flex-col items-center justify-center py-20">
+      <i class="fa-solid fa-circle-notch fa-spin text-4xl text-indigo-500 mb-3"></i>
+      <p class="text-xs text-zinc-400 font-mono">Chargement des Marchés en direct...</p>
     </div>
 
-    <!-- ONGLET 1 : ACCUEIL & SCREENER SECTORIEL -->
-    <div id="tab-opportunites" class="tab-content hidden space-y-4 tab-active">
-      
-      <!-- BARRE DE FILTRES SECTORIELS & THÉMATIQUES -->
-      <div class="glass-panel rounded-2xl p-3 space-y-2">
-        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-xs font-mono" id="sector-filters">
-          <button onclick="filterSector('ALL')" class="sector-btn px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold whitespace-nowrap">Tous les Marchés</button>
+    <!-- ONGLET 1 : MARCHÉS -->
+    <div id="tab-opportunites" class="tab-content space-y-4">
+      <div class="glass-panel rounded-2xl p-3 flex justify-between items-center">
+        <div class="flex gap-2 overflow-x-auto no-scrollbar text-xs font-mono">
+          <button onclick="filterSector('ALL')" class="sector-btn px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold whitespace-nowrap">Tous les Secteurs</button>
           <button onclick="filterSector('Tech')" class="sector-btn px-3 py-1.5 rounded-xl bg-zinc-900 text-zinc-400 whitespace-nowrap border border-zinc-800">Tech & IA</button>
           <button onclick="filterSector('Luxe')" class="sector-btn px-3 py-1.5 rounded-xl bg-zinc-900 text-zinc-400 whitespace-nowrap border border-zinc-800">Luxe</button>
           <button onclick="filterSector('Finance')" class="sector-btn px-3 py-1.5 rounded-xl bg-zinc-900 text-zinc-400 whitespace-nowrap border border-zinc-800">Finance</button>
@@ -83,64 +85,57 @@
         </div>
       </div>
 
-      <div id="grid-opportunites" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      <div id="grid-opportunites" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </div>
 
-    <!-- ONGLET 2 : OPTIMISATEUR MARKOWITZ & MATRICE DE CORRÉLATION -->
-    <div id="tab-markowitz" class="tab-content hidden space-y-5 tab-active">
+    <!-- ONGLET 2 : MARKOWITZ -->
+    <div id="tab-markowitz" class="tab-content hidden space-y-5">
       <div class="glass-panel rounded-3xl p-6">
-        <h2 class="text-base font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-emerald-400"></i>Optimisation de Portefeuille Markowitz</h2>
-        <p class="text-xs text-zinc-400 mb-5">Allocation idéale du capital calculée pour maximiser le ratio de Sharpe selon votre tolérance au risque.</p>
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-base font-bold flex items-center gap-2"><i class="fa-solid fa-chart-pie text-emerald-400"></i>Allocation Markowitz</h2>
+          <span id="markowitz-account-badge" class="px-2.5 py-1 rounded-full text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">MODE PEA</span>
+        </div>
         
         <div class="flex gap-2 mb-6">
-          <button onclick="loadMarkowitz('defensif')" class="risk-btn px-4 py-2 bg-zinc-900 text-zinc-300 rounded-xl text-xs font-mono border border-zinc-700 w-full">Prudent</button>
-          <button onclick="loadMarkowitz('equilibre')" class="risk-btn px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs font-mono border border-indigo-500 w-full">Équilibré</button>
-          <button onclick="loadMarkowitz('offensif')" class="risk-btn px-4 py-2 bg-zinc-900 text-zinc-300 rounded-xl text-xs font-mono border border-zinc-700 w-full">Offensif</button>
+          <button onclick="loadMarkowitz('defensif')" class="px-4 py-2 bg-zinc-900 text-zinc-300 rounded-xl text-xs font-mono border border-zinc-700 w-full">Prudent</button>
+          <button onclick="loadMarkowitz('equilibre')" class="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs font-mono border border-indigo-500 w-full">Équilibré</button>
+          <button onclick="loadMarkowitz('offensif')" class="px-4 py-2 bg-zinc-900 text-zinc-300 rounded-xl text-xs font-mono border border-zinc-700 w-full">Offensif</button>
         </div>
-
         <div id="markowitz-results" class="space-y-3 font-mono text-xs"></div>
-      </div>
-
-      <div class="glass-panel rounded-3xl p-6">
-        <h3 class="text-xs font-bold text-zinc-300 uppercase tracking-wider mb-4"><i class="fa-solid fa-table-cells text-indigo-400 mr-2"></i>Matrice de Corrélation & Risque de Concentration</h3>
-        <div id="correlation-matrix" class="overflow-x-auto text-xs font-mono"></div>
       </div>
     </div>
 
-    <!-- ONGLET 3 : VISION (GRAPHIQUES TRADINGVIEW) -->
-    <div id="tab-chart" class="tab-content hidden space-y-4 tab-active">
+    <!-- ONGLET 3 : VISION TRADINGVIEW -->
+    <div id="tab-chart" class="tab-content hidden space-y-4">
       <div class="glass-panel rounded-3xl p-4">
         <div class="flex gap-2 mb-4 overflow-x-auto pb-2 no-scrollbar" id="chart-ticker-selector"></div>
         <div id="tv-chart-container" class="h-[480px] w-full rounded-2xl overflow-hidden border border-zinc-800"></div>
       </div>
     </div>
 
-    <!-- ONGLET 4 : PAPER TRADING & ACTUALITÉS -->
-    <div id="tab-portfolio" class="tab-content hidden space-y-5 tab-active">
+    <!-- ONGLET 4 : PAPER TRADING -->
+    <div id="tab-portfolio" class="tab-content hidden space-y-5">
       <div class="glass-panel rounded-3xl p-6">
         <div class="flex justify-between items-center mb-6">
           <div>
             <span class="text-[10px] text-zinc-500 font-mono uppercase">Capital Virtuel Dispo</span>
             <h2 class="text-3xl font-bold font-mono text-emerald-400" id="virtual-cash">10 000.00 €</h2>
           </div>
-          <button onclick="triggerSound('click'); resetPortfolio()" class="text-xs text-rose-400 bg-rose-950/40 border border-rose-800/50 px-3 py-2 rounded-2xl font-mono active:scale-95 transition">
-            Reset 10k€
-          </button>
+          <button onclick="resetPortfolio()" class="text-xs text-rose-400 bg-rose-950/40 border border-rose-800/50 px-3 py-2 rounded-2xl font-mono">Reset 10k€</button>
         </div>
-        <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Positions Virtuelles Ouvertes</h3>
-        <div id="portfolio-positions" class="space-y-3 font-mono text-xs mb-6"></div>
+        <div id="portfolio-positions" class="space-y-3 font-mono text-xs"></div>
       </div>
     </div>
 
-    <!-- ONGLET 5 : QUANT (BACKTEST & MONTE-CARLO) -->
-    <div id="tab-backtest" class="tab-content hidden space-y-5 tab-active">
+    <!-- ONGLET 5 : QUANT -->
+    <div id="tab-backtest" class="tab-content hidden space-y-5">
       <div class="glass-panel rounded-3xl p-6">
-        <h2 class="text-base font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-calculator text-indigo-400"></i>Backtesting & Simulations Monte-Carlo</h2>
-        <div class="flex gap-2 my-5">
+        <h2 class="text-base font-bold mb-3"><i class="fa-solid fa-calculator text-indigo-400 mr-2"></i>Backtest & Monte-Carlo</h2>
+        <div class="flex gap-2 mb-5">
           <select id="backtest-select" class="bg-zinc-900 text-white font-mono text-xs border border-zinc-700 p-3 rounded-2xl w-full">
-            <option value="">Chargement des actions...</option>
+            <option value="MC.PA">LVMH (MC.PA)</option>
           </select>
-          <button onclick="triggerSound('pop'); runQuantSimulations()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-6 py-3 rounded-2xl font-mono active:scale-95 transition">Calculer</button>
+          <button onclick="runQuantSimulations()" class="bg-indigo-600 text-white text-xs font-bold px-6 py-3 rounded-2xl font-mono">Calculer</button>
         </div>
         <div id="backtest-results" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
@@ -161,26 +156,26 @@
     </div>
   </div>
 
-  <!-- NAVIGATION BOTTOM FIXE -->
+  <!-- NAVIGATION FIXE -->
   <nav class="fixed bottom-0 left-0 w-full bg-zinc-950/90 backdrop-blur-2xl border-t border-zinc-800/80 z-40">
     <div class="flex justify-around items-center py-3 max-w-md mx-auto text-center">
-      <button onclick="triggerSound('click'); switchTab('opportunites')" id="nav-opportunites" class="nav-btn flex flex-col items-center text-emerald-400 active:scale-95 transition">
+      <button onclick="switchTab('opportunites')" id="nav-opportunites" class="nav-btn flex flex-col items-center text-emerald-400">
         <i class="fa-solid fa-house text-lg mb-0.5"></i>
         <span class="text-[9px] font-bold uppercase">Marchés</span>
       </button>
-      <button onclick="triggerSound('click'); switchTab('markowitz')" id="nav-markowitz" class="nav-btn flex flex-col items-center text-zinc-500 active:scale-95 transition">
+      <button onclick="switchTab('markowitz')" id="nav-markowitz" class="nav-btn flex flex-col items-center text-zinc-500">
         <i class="fa-solid fa-chart-pie text-lg mb-0.5"></i>
         <span class="text-[9px] font-bold uppercase">Markowitz</span>
       </button>
-      <button onclick="triggerSound('click'); switchTab('chart')" id="nav-chart" class="nav-btn flex flex-col items-center text-zinc-500 active:scale-95 transition">
+      <button onclick="switchTab('chart')" id="nav-chart" class="nav-btn flex flex-col items-center text-zinc-500">
         <i class="fa-solid fa-chart-candlestick text-lg mb-0.5"></i>
         <span class="text-[9px] font-bold uppercase">Vision</span>
       </button>
-      <button onclick="triggerSound('click'); switchTab('portfolio')" id="nav-portfolio" class="nav-btn flex flex-col items-center text-zinc-500 active:scale-95 transition">
+      <button onclick="switchTab('portfolio')" id="nav-portfolio" class="nav-btn flex flex-col items-center text-zinc-500">
         <i class="fa-solid fa-wallet text-lg mb-0.5"></i>
         <span class="text-[9px] font-bold uppercase">Paper</span>
       </button>
-      <button onclick="triggerSound('click'); switchTab('backtest')" id="nav-backtest" class="nav-btn flex flex-col items-center text-zinc-500 active:scale-95 transition">
+      <button onclick="switchTab('backtest')" id="nav-backtest" class="nav-btn flex flex-col items-center text-zinc-500">
         <i class="fa-solid fa-microchip text-lg mb-0.5"></i>
         <span class="text-[9px] font-bold uppercase">Quant</span>
       </button>
@@ -189,103 +184,123 @@
 
   <script>
     let globalData = [];
+    let currentAccountMode = 'PEA'; // PEA par défaut ou CTO
     let currentSectorFilter = 'ALL';
-    let currentChartTicker = "NVDA";
+    let currentChartTicker = "MC.PA";
     let portfolio = JSON.parse(localStorage.getItem("paper_portfolio")) || { cash: 10000, positions: [] };
 
-    // RETOUR AUDIO SYNTHÉTIQUE
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function triggerSound(type) {
-      if (navigator.vibrate) navigator.vibrate(15);
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+    // BASCULEUR DE MODE PEA / CTO EN 1 CLIC
+    function setAccountMode(mode) {
+      currentAccountMode = mode;
       
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain); gain.connect(audioCtx.destination);
-      
-      if (type === 'click') {
-        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.05);
-      } else if (type === 'pop') {
-        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+      const btnPea = document.getElementById('btn-mode-pea');
+      const btnCto = document.getElementById('btn-mode-cto');
+      const badgeMarkowitz = document.getElementById('markowitz-account-badge');
+
+      if(mode === 'PEA') {
+        btnPea.className = "flex-1 md:flex-none px-4 py-1.5 rounded-xl text-xs font-mono font-bold transition-all bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20";
+        btnCto.className = "flex-1 md:flex-none px-4 py-1.5 rounded-xl text-xs font-mono text-zinc-400 hover:text-white transition-all";
+        if(badgeMarkowitz) {
+          badgeMarkowitz.className = "px-2.5 py-1 rounded-full text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold";
+          badgeMarkowitz.innerText = "MODE PEA";
+        }
+      } else {
+        btnCto.className = "flex-1 md:flex-none px-4 py-1.5 rounded-xl text-xs font-mono font-bold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/20";
+        btnPea.className = "flex-1 md:flex-none px-4 py-1.5 rounded-xl text-xs font-mono text-zinc-400 hover:text-white transition-all";
+        if(badgeMarkowitz) {
+          badgeMarkowitz.className = "px-2.5 py-1 rounded-full text-[10px] font-mono bg-indigo-950 text-indigo-400 border border-indigo-800 font-bold";
+          badgeMarkowitz.innerText = "MODE CTO";
+        }
       }
+
+      renderSignals();
+      setupChartSelectors();
+      populateQuantSelect();
+      loadMarkowitz('equilibre');
     }
 
-    // ENREGISTREMENT SERVICE WORKER (PWA OFFLINE RESILIENCE)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      const activeTab = document.getElementById('tab-' + tabId);
+      if(activeTab) activeTab.classList.remove('hidden');
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-emerald-400');
+        btn.classList.add('text-zinc-500');
+      });
+      const activeNav = document.getElementById('nav-' + tabId);
+      if(activeNav) {
+        activeNav.classList.remove('text-zinc-500');
+        activeNav.classList.add('text-emerald-400');
+      }
+
+      if(tabId === 'chart') loadTradingViewWidget(currentChartTicker);
+      if(tabId === 'markowitz') loadMarkowitz('equilibre');
     }
 
-    // CHARGEMENT INITIAL DES DONNÉES
     fetch('/api/data')
       .then(res => res.json())
       .then(data => {
         globalData = data;
-        document.getElementById('loading').style.display = 'none';
+        const loader = document.getElementById('loading');
+        if(loader) loader.style.display = 'none';
         
-        switchTab('opportunites');
-        setupChartSelectors();
-        populateQuantSelect();
+        document.getElementById('market-mood').innerText = `Marchés : ${globalData.length} Actions Analysées`;
+        setAccountMode('PEA'); // Init par défaut
         renderPortfolio();
+      })
+      .catch(err => {
+        document.getElementById('market-mood').innerText = "Mode secours / Hors-ligne";
+        document.getElementById('loading').style.display = 'none';
       });
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.getElementById('tab-' + tabId).classList.remove('hidden');
-      document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-emerald-400'); btn.classList.add('text-zinc-500'); });
-      document.getElementById('nav-' + tabId).classList.remove('text-zinc-500');
-      document.getElementById('nav-' + tabId).classList.add('text-emerald-400');
-
-      if(tabId === 'opportunites') renderSignals();
-      if(tabId === 'markowitz') { loadMarkowitz('equilibre'); loadCorrelation(); }
-      if(tabId === 'chart') loadTradingViewWidget(currentChartTicker);
-      if(tabId === 'backtest') runQuantSimulations();
-    }
-
     function filterSector(sector) {
-      triggerSound('click');
       currentSectorFilter = sector;
       renderSignals();
     }
 
     function flipCard(cardId) {
-      triggerSound('pop');
-      document.getElementById(cardId).classList.toggle('card-flipped');
+      const el = document.getElementById(cardId);
+      if(el) el.classList.toggle('card-flipped');
     }
 
     function renderSignals() {
       const grid = document.getElementById('grid-opportunites');
+      if(!grid) return;
       grid.innerHTML = '';
-      
-      let filtered = currentSectorFilter === 'ALL' ? globalData : globalData.filter(i => i.sector === currentSectorFilter);
+
+      // Filtrage 1: Mode PEA vs CTO
+      let accountFiltered = currentAccountMode === 'PEA' 
+        ? globalData.filter(i => i.pea === true)
+        : globalData;
+
+      // Filtrage 2: Secteur
+      let filtered = currentSectorFilter === 'ALL' 
+        ? accountFiltered 
+        : accountFiltered.filter(i => i.sector === currentSectorFilter);
+
       let opps = filtered.sort((a,b) => b.score - a.score);
-      
-      document.getElementById('stat-signals').innerText = globalData.filter(i => i.score >= 1.2).length;
 
       opps.forEach((item, index) => {
         const recColor = item.score >= 1.4 ? 'emerald' : (item.score >= 1.0 ? 'cyan' : 'amber');
         const recText = item.score >= 1.4 ? 'ACHETER FORT' : (item.score >= 1.0 ? 'ACHETER' : 'CONSERVER');
         const cardId = `card-${index}`;
 
-        // Badge pattern chartiste s'il y en a un
-        const patternBadge = item.patterns && item.patterns.length > 0 
-          ? `<span class="px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-700/50 text-[9px] font-mono"><i class="fa-solid fa-chart-line mr-1"></i>${item.patterns[0]}</span>`
-          : '';
+        const peaBadge = item.pea 
+          ? `<span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[9px] font-mono font-bold">PEA</span>`
+          : `<span class="px-2 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800 text-[9px] font-mono font-bold">CTO</span>`;
 
         grid.innerHTML += `
-          <div class="perspective-1000 h-[370px] cursor-pointer" onclick="flipCard('${cardId}')">
+          <div class="perspective-1000 h-[360px] cursor-pointer" onclick="flipCard('${cardId}')">
             <div id="${cardId}" class="card-inner w-full h-full relative">
-              
               <div class="card-front absolute inset-0 glass-card rounded-3xl p-5 flex flex-col justify-between">
                 <div>
                   <div class="flex justify-between items-start mb-2">
                     <span class="text-[9px] font-mono text-${recColor}-400 font-bold uppercase tracking-wider">${recText}</span>
-                    ${patternBadge}
+                    <div class="flex items-center gap-1.5">
+                      ${peaBadge}
+                      <span class="text-[9px] text-zinc-500 font-mono"><i class="fa-solid fa-rotate mr-1"></i>X-Ray</span>
+                    </div>
                   </div>
                   <h3 class="text-xl font-bold text-white">${item.entreprise}</h3>
                   <div class="flex items-center gap-2 mt-1">
@@ -296,7 +311,7 @@
 
                 <div class="grid grid-cols-2 gap-3 font-mono">
                   <div class="bg-zinc-900/80 p-3 rounded-2xl border border-zinc-800">
-                    <span class="text-[9px] text-zinc-500 block">Prix Clôture</span>
+                    <span class="text-[9px] text-zinc-500 block">Prix</span>
                     <span class="text-lg text-zinc-100 font-bold">€${item.prix.toFixed(2)}</span>
                   </div>
                   <div class="bg-indigo-950/30 p-3 rounded-2xl border border-indigo-900/40">
@@ -305,90 +320,43 @@
                   </div>
                 </div>
 
-                <button onclick="event.stopPropagation(); triggerSound('pop'); buyPaperTrade('${item.ticker}', ${item.prix})" class="w-full py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-2xl text-xs font-bold font-mono transition active:scale-95">
+                <button onclick="event.stopPropagation(); buyPaperTrade('${item.ticker}', ${item.prix})" class="w-full py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-2xl text-xs font-bold font-mono">
                   Paper Trade (+1 Action)
                 </button>
               </div>
 
               <div class="card-back absolute inset-0 bg-zinc-950 border border-indigo-500/40 rounded-3xl p-5 flex flex-col justify-between font-mono">
                 <div>
-                  <span class="text-[9px] text-indigo-400 font-mono uppercase tracking-widest block mb-2"><i class="fa-solid fa-microchip mr-1"></i>Matrice Quant (X-Ray)</span>
+                  <span class="text-[9px] text-indigo-400 uppercase block mb-2"><i class="fa-solid fa-microchip mr-1"></i>Rayons-X IA</span>
                   <div class="space-y-2 text-xs text-zinc-300">
+                    <div class="flex justify-between"><span>Éligibilité:</span><span class="${item.pea?'text-emerald-400':'text-indigo-400'} font-bold">${item.pea?'PEA & CTO':'CTO Uniquement'}</span></div>
                     <div class="flex justify-between"><span>RSI (14j):</span><span class="text-indigo-400">${item.rsi}</span></div>
                     <div class="flex justify-between"><span>SMA 200:</span><span class="text-zinc-200">€${item.sma200}</span></div>
-                    <div class="flex justify-between"><span>ROE:</span><span class="text-emerald-400">${(item.roe*100).toFixed(1)}%</span></div>
                     <div class="flex justify-between"><span>Secteur:</span><span class="text-zinc-200">${item.sector}</span></div>
                   </div>
                 </div>
-                <div class="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800 text-[10px] text-zinc-400 leading-relaxed">
-                  Confiance Gradient Boosting : <strong>${(item.score*50).toFixed(0)}%</strong> sur 15 jours.
+                <div class="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800 text-[10px] text-zinc-400">
+                  Gradient Boosting : Probabilité de hausse à 15j = ${(item.score*50).toFixed(0)}%.
                 </div>
               </div>
-
             </div>
           </div>
         `;
       });
     }
 
-    // MARKOWITZ ALLOCATION LOGIC
-    function loadMarkowitz(profile) {
-      triggerSound('click');
-      const div = document.getElementById('markowitz-results');
-      div.innerHTML = `<div class="text-center py-4 text-zinc-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Calcul de l'allocation optimale...</div>`;
-      
-      fetch(`/api/markowitz?risk_profile=${profile}`)
-        .then(r => r.json())
-        .then(res => {
-          div.innerHTML = '';
-          res.allocation.forEach(item => {
-            div.innerHTML += `
-              <div class="glass-card p-3 rounded-2xl flex justify-between items-center">
-                <div>
-                  <span class="font-bold text-white">${item.entreprise}</span>
-                  <span class="text-[10px] text-zinc-500 block">${item.ticker}</span>
-                </div>
-                <div class="text-right">
-                  <span class="text-emerald-400 font-bold text-sm block">${item.weight_pct}% du capital</span>
-                  <span class="text-[9px] text-zinc-500">Score IA: ${item.score}</span>
-                </div>
-              </div>
-            `;
-          });
-        });
-    }
-
-    function loadCorrelation() {
-      fetch('/api/correlation')
-        .then(r => r.json())
-        .then(res => {
-          if(res.error) return;
-          const div = document.getElementById('correlation-matrix');
-          let html = `<table class="w-full text-center border-collapse"><thead><tr><th></th>`;
-          res.tickers.forEach(t => { html += `<th class="p-2 text-indigo-400">${t}</th>`; });
-          html += `</tr></thead><tbody>`;
-          
-          res.tickers.forEach(t1 => {
-            html += `<tr><td class="p-2 font-bold text-zinc-300 text-left">${t1}</td>`;
-            res.tickers.forEach(t2 => {
-              const val = res.matrix[t1][t2];
-              const color = val > 0.7 ? 'text-rose-400 font-bold' : (val < 0.3 ? 'text-emerald-400' : 'text-zinc-400');
-              html += `<td class="p-2 ${color}">${val}</td>`;
-            });
-            html += `</tr>`;
-          });
-          html += `</tbody></table>`;
-          div.innerHTML = html;
-        });
-    }
-
     function setupChartSelectors() {
       const container = document.getElementById('chart-ticker-selector');
+      if(!container) return;
       container.innerHTML = '';
-      globalData.forEach(item => {
+      
+      let dataset = currentAccountMode === 'PEA' ? globalData.filter(i => i.pea === true) : globalData;
+      if(dataset.length > 0) currentChartTicker = dataset[0].ticker;
+
+      dataset.forEach(item => {
         container.innerHTML += `
-          <button onclick="triggerSound('click'); changeChartTicker('${item.ticker}')" class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-mono whitespace-nowrap hover:border-indigo-500 flex-shrink-0">
-            ${item.entreprise} (${item.ticker})
+          <button onclick="changeChartTicker('${item.ticker}')" class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-mono whitespace-nowrap hover:border-indigo-500 flex-shrink-0">
+            ${item.entreprise}
           </button>
         `;
       });
@@ -396,7 +364,9 @@
 
     function changeChartTicker(ticker) { currentChartTicker = ticker; loadTradingViewWidget(ticker); }
     function loadTradingViewWidget(symbol) {
-      document.getElementById('tv-chart-container').innerHTML = '';
+      const container = document.getElementById('tv-chart-container');
+      if(!container) return;
+      container.innerHTML = '';
       new TradingView.widget({
         "autosize": true, "symbol": symbol, "interval": "D", "timezone": "Europe/Paris",
         "theme": "dark", "style": "1", "locale": "fr", "container_id": "tv-chart-container"
@@ -405,10 +375,40 @@
 
     function populateQuantSelect() {
       const select = document.getElementById('backtest-select');
+      if(!select) return;
       select.innerHTML = '';
-      globalData.forEach(item => {
+      let dataset = currentAccountMode === 'PEA' ? globalData.filter(i => i.pea === true) : globalData;
+      dataset.forEach(item => {
         select.innerHTML += `<option value="${item.ticker}">${item.entreprise} (${item.ticker})</option>`;
       });
+    }
+
+    function loadMarkowitz(profile) {
+      const div = document.getElementById('markowitz-results');
+      if(!div) return;
+      div.innerHTML = `<div class="text-center py-4 text-zinc-500">Calcul Markowitz (${currentAccountMode})...</div>`;
+      
+      fetch(`/api/markowitz?risk_profile=${profile}&account_type=${currentAccountMode}`)
+        .then(r => r.json())
+        .then(res => {
+          div.innerHTML = '';
+          if(res.allocation) {
+            res.allocation.forEach(item => {
+              div.innerHTML += `
+                <div class="glass-card p-3 rounded-2xl flex justify-between items-center">
+                  <div>
+                    <span class="font-bold text-white">${item.entreprise}</span>
+                    <span class="text-[10px] text-zinc-500 block">${item.ticker}</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-emerald-400 font-bold text-sm block">${item.weight_pct}%</span>
+                    <span class="text-[9px] ${item.pea?'text-emerald-400':'text-indigo-400'} font-mono">${item.pea?'PEA':'CTO'}</span>
+                  </div>
+                </div>
+              `;
+            });
+          }
+        });
     }
 
     function buyPaperTrade(ticker, price) {
@@ -420,8 +420,10 @@
     }
 
     function renderPortfolio() {
-      document.getElementById('virtual-cash').innerText = portfolio.cash.toFixed(2) + " €";
+      const cashEl = document.getElementById('virtual-cash');
+      if(cashEl) cashEl.innerText = portfolio.cash.toFixed(2) + " €";
       const container = document.getElementById('portfolio-positions');
+      if(!container) return;
       container.innerHTML = '';
       if(portfolio.positions.length === 0) container.innerHTML = `<p class="text-zinc-600 text-center py-4">Aucune position ouverte.</p>`;
 
@@ -434,11 +436,11 @@
           <div class="glass-card p-3.5 rounded-2xl flex justify-between items-center">
             <div>
               <span class="font-bold text-white">${pos.ticker}</span>
-              <span class="text-[10px] text-zinc-500 block">Acheté à €${pos.buyPrice.toFixed(2)} (${pos.date})</span>
+              <span class="text-[10px] text-zinc-500 block">€${pos.buyPrice.toFixed(2)}</span>
             </div>
             <div class="text-right">
               <span class="${pnl>=0?'text-emerald-400':'text-rose-400'} font-bold block">${pnl>=0?'+':''}${pnl}%</span>
-              <button onclick="triggerSound('click'); sellPaperTrade(${idx}, ${livePrice})" class="text-[10px] text-rose-400 underline">Vendre</button>
+              <button onclick="sellPaperTrade(${idx}, ${livePrice})" class="text-[10px] text-rose-400 underline">Vendre</button>
             </div>
           </div>
         `;
@@ -462,7 +464,7 @@
       const ticker = document.getElementById('backtest-select').value;
       if(!ticker) return;
       const resultsDiv = document.getElementById('backtest-results');
-      resultsDiv.innerHTML = `<div class="col-span-2 text-center py-6 text-zinc-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Calculs Quantitatifs...</div>`;
+      resultsDiv.innerHTML = `<div class="col-span-2 text-center py-6 text-zinc-500">Calculs en cours...</div>`;
 
       Promise.all([
         fetch(`/api/backtest?ticker=${ticker}`).then(r => r.json()),
@@ -470,17 +472,15 @@
       ]).then(([backtest, mc]) => {
         resultsDiv.innerHTML = `
           <div class="glass-card p-4 rounded-2xl">
-            <h4 class="text-xs font-bold text-indigo-400 uppercase mb-2">Backtest (1 An)</h4>
-            <div class="space-y-1.5 text-xs font-mono">
-              <div class="flex justify-between"><span>Rendement Stratégie:</span><span class="${backtest.total_return_pct>=0?'text-emerald-400':'text-rose-400'} font-bold">${backtest.total_return_pct}%</span></div>
-              <div class="flex justify-between"><span>Win Rate (Taux Succès):</span><span class="text-emerald-400 font-bold">${backtest.win_rate_pct}%</span></div>
-              <div class="flex justify-between"><span>Max Drawdown:</span><span class="text-rose-400 font-bold">-${backtest.max_drawdown_pct}%</span></div>
+            <h4 class="text-xs font-bold text-indigo-400 uppercase mb-2">Backtest 1 An</h4>
+            <div class="space-y-1 text-xs font-mono">
+              <div class="flex justify-between"><span>Rendement:</span><span class="${backtest.total_return_pct>=0?'text-emerald-400':'text-rose-400'} font-bold">${backtest.total_return_pct}%</span></div>
+              <div class="flex justify-between"><span>Win Rate:</span><span class="text-emerald-400 font-bold">${backtest.win_rate_pct}%</span></div>
             </div>
           </div>
           <div class="glass-card p-4 rounded-2xl">
-            <h4 class="text-xs font-bold text-purple-400 uppercase mb-2">Monte-Carlo (30j)</h4>
-            <div class="space-y-1.5 text-xs font-mono">
-              <div class="flex justify-between"><span>Pessimiste (P10):</span><span class="text-rose-400">€${mc.bear_case_p10}</span></div>
+            <h4 class="text-xs font-bold text-purple-400 uppercase mb-2">Monte-Carlo 30j</h4>
+            <div class="space-y-1 text-xs font-mono">
               <div class="flex justify-between"><span>Médian (P50):</span><span class="text-zinc-200 font-bold">€${mc.base_case_p50}</span></div>
               <div class="flex justify-between"><span>Optimiste (P90):</span><span class="text-emerald-400 font-bold">€${mc.bull_case_p90}</span></div>
             </div>
