@@ -25,9 +25,12 @@ app.add_middleware(
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Univers élargi : 12 valeurs majeures FR & US
 TICKERS = {
-    "LVMH": "MC.PA", "TotalEnergies": "TTE.PA", "BNP Paribas": "BNP.PA", "Apple": "AAPL",
-    "Microsoft": "MSFT", "ASML": "ASML.AS", "JPMorgan": "JPM", "ExxonMobil": "XOM"
+    "LVMH": "MC.PA", "TotalEnergies": "TTE.PA", "BNP Paribas": "BNP.PA", 
+    "Hermès": "RMS.PA", "L'Oréal": "OR.PA", "Schneider": "SU.PA",
+    "Apple": "AAPL", "Microsoft": "MSFT", "Nvidia": "NVDA", 
+    "Amazon": "AMZN", "ASML": "ASML.AS", "JPMorgan": "JPM"
 }
 
 MODEL_PATH = "ml_model_gb.pkl"
@@ -37,14 +40,12 @@ def compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df['SMA50'] = df['Close'].rolling(50).mean()
     df['SMA200'] = df['Close'].rolling(200).mean()
     
-    # RSI 14
     delta = df['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
     rs = gain / (loss + 1e-9)
     df['RSI'] = 100 - (100 / (1 + rs))
     
-    # MACD & Volatilité
     ema12 = df['Close'].ewm(span=12, adjust=False).mean()
     ema26 = df['Close'].ewm(span=26, adjust=False).mean()
     df['MACD'] = ema12 - ema26
@@ -147,7 +148,6 @@ def run_backtest(ticker: str = Query("MC.PA")):
         if len(hist) < 100: return {"error": "Historique insuffisant"}
         hist = compute_indicators(hist).dropna()
         
-        # Simulation d'achat quand RSI < 45 et Prix > SMA200
         hist['Signal'] = np.where((hist['RSI'] < 45) & (hist['Close'] > hist['SMA200']), 1, 0)
         hist['Strategy_Return'] = hist['Signal'].shift(1) * hist['Returns']
         
