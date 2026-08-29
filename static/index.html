@@ -8,190 +8,290 @@
   <meta name="theme-color" content="#09090b">
   <link rel="manifest" href="/static/manifest.json">
   
-  <title>Synapse Quant - Terminal Pro</title>
+  <title>SynapseQuant Pro - Terminal Multi-Factoriel</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
     body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #09090b; scroll-behavior: smooth; }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
     
-    /* Effet "Verre Brossé" Premium (Glassmorphism) */
-    .glass-panel { background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(63, 63, 70, 0.5); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
-    .glass-panel-inner { background: rgba(18, 18, 20, 0.5); border: 1px solid rgba(63, 63, 70, 0.3); }
+    .glass-panel { background: rgba(18, 18, 20, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(63, 63, 70, 0.4); box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+    .glass-card { background: rgba(24, 24, 27, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(63, 63, 70, 0.3); }
+    .glass-card:hover { border-color: rgba(99, 102, 241, 0.5); transform: translateY(-2px); }
     
-    /* Animations de fluidité */
     @keyframes pulsering { 0% { transform: scale(0.1); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     
     .pulse-ring { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #10b981; animation: pulsering 2.5s ease-out infinite; z-index: -1; }
-    .tab-active { animation: fadeIn 0.4s ease-out; }
-    
-    /* Gauge styles */
-    .gauge-container { position: relative; width: 48px; height: 48px; }
-    .gauge-circle { transform: rotate(-90deg); transform-origin: center; }
+    .tab-active { animation: fadeIn 0.35s ease-out; }
   </style>
 </head>
-<body class="text-zinc-100 pb-24 md:pb-6 pt-4 md:pt-6">
+<body class="text-zinc-100 pb-28 md:pb-8 pt-4 md:pt-6">
   
   <div class="max-w-7xl mx-auto px-4">
     
-    <header class="flex justify-between items-center mb-6 glass-panel rounded-3xl p-4 md:p-5">
-      <div class="flex items-center gap-3.5">
-        <div class="h-11 w-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-          <i class="fa-solid fa-brain text-white text-xl"></i>
+    <!-- HEADER ET BARRE DE CONTEXTE MACRO -->
+    <header class="glass-panel rounded-3xl p-4 md:p-5 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-3.5">
+          <div class="h-11 w-11 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <i class="fa-solid fa-brain text-white text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Synapse<span class="text-emerald-400">Quant</span> <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-700/50 font-mono">PRO</span></h1>
+            <p class="text-[10px] text-zinc-400 font-mono uppercase tracking-widest" id="last-update">Synchronisation...</p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight text-white">Synapse<span class="text-emerald-400">Quant</span></h1>
-          <p class="text-[10px] text-zinc-500 font-mono uppercase tracking-widest" id="last-update">Synchronisation...</p>
+        
+        <div class="flex items-center gap-3">
+          <div class="relative flex items-center justify-center h-9 w-9 bg-zinc-900 rounded-full border border-zinc-800">
+            <div id="status-dot" class="h-2.5 w-2.5 rounded-full bg-amber-500 z-10"></div>
+            <div id="status-pulse" class="pulse-ring bg-amber-500 hidden"></div>
+          </div>
         </div>
       </div>
-      
-      <div class="flex items-center gap-4">
-        <div class="relative flex items-center justify-center h-10 w-10 bg-zinc-900 rounded-full border border-zinc-800">
-          <div id="status-dot" class="h-3 w-3 rounded-full bg-amber-500 z-10"></div>
-          <div id="status-pulse" class="pulse-ring bg-amber-500 hidden"></div>
+
+      <!-- Ruban Macro-Économique -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 pt-3 border-t border-zinc-800/80 text-[11px] font-mono">
+        <div class="flex items-center justify-between px-3 py-1.5 bg-zinc-900/60 rounded-xl border border-zinc-800">
+          <span class="text-zinc-500"><i class="fa-solid fa-oil-well mr-1.5 text-amber-500"></i>Pétrole WTI</span>
+          <span class="text-zinc-200 font-bold">$75.40</span>
         </div>
-         <i class="fa-solid fa-bell text-zinc-600 hover:text-zinc-300 text-xl cursor-pointer"></i>
+        <div class="flex items-center justify-between px-3 py-1.5 bg-zinc-900/60 rounded-xl border border-zinc-800">
+          <span class="text-zinc-500"><i class="fa-solid fa-gauge-high mr-1.5 text-purple-400"></i>VIX (Peur)</span>
+          <span class="text-emerald-400 font-bold">16.2 <span class="text-[9px] text-zinc-500">(Calme)</span></span>
+        </div>
+        <div class="flex items-center justify-between px-3 py-1.5 bg-zinc-900/60 rounded-xl border border-zinc-800">
+          <span class="text-zinc-500"><i class="fa-solid fa-coins mr-1.5 text-yellow-500"></i>Or (Safe)</span>
+          <span class="text-zinc-200 font-bold">$2,045</span>
+        </div>
+        <div class="flex items-center justify-between px-3 py-1.5 bg-zinc-900/60 rounded-xl border border-zinc-800">
+          <span class="text-zinc-500"><i class="fa-solid fa-building-columns mr-1.5 text-blue-400"></i>Taux US 10Y</span>
+          <span class="text-zinc-200 font-bold">4.25%</span>
+        </div>
       </div>
     </header>
 
-    <div id="loading" class="flex flex-col items-center justify-center py-48">
-      <div class="relative w-24 h-24 mb-6">
-        <div class="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-[spin_1.8s_linear_infinite]"></div>
-        <div class="absolute inset-2 rounded-full border-r-2 border-emerald-500 animate-[spin_2.2s_linear_infinite_reverse]"></div>
-        <div class="absolute inset-4 rounded-full border-b-2 border-purple-500 animate-[spin_1.3s_linear_infinite]"></div>
-        <i class="fa-solid fa-gear absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-zinc-600"></i>
+    <!-- ÉCRAN DE CHARGEMENT -->
+    <div id="loading" class="flex flex-col items-center justify-center py-40">
+      <div class="relative w-20 h-20 mb-6">
+        <div class="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-[spin_1.5s_linear_infinite]"></div>
+        <div class="absolute inset-2 rounded-full border-r-2 border-emerald-500 animate-[spin_2s_linear_infinite_reverse]"></div>
+        <i class="fa-solid fa-microchip absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-zinc-500"></i>
       </div>
-      <p class="text-zinc-500 text-sm font-mono tracking-widest uppercase animate-pulse">Inférence du modèle Random Forest...</p>
+      <p class="text-zinc-400 text-xs font-mono tracking-widest uppercase animate-pulse">Extraction des 8 variables multi-factorielles...</p>
     </div>
 
+    <!-- ONGLET 1 : RECOMMANDATIONS & SIGNAUX IA -->
     <div id="tab-opportunites" class="tab-content hidden space-y-6 tab-active">
-      
-      <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
-        <div class="absolute -right-12 -top-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
-        
-        <div class="flex justify-between items-start gap-4 mb-5">
-            <h2 class="text-zinc-400 font-bold text-xs uppercase tracking-wider mb-4"><i class="fa-solid fa-filter-list mr-2"></i>Résumé du Portefeuille Recommandé</h2>
-            <div class="text-right">
-                <p class="text-4xl font-bold text-white" id="stat-signals">0</p>
-                <p class="text-xs text-emerald-400 mt-1">Actions avec Conviction IA Élevée</p>
-            </div>
+      <div class="glass-panel rounded-3xl p-5 flex justify-between items-center">
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400"><i class="fa-solid fa-bolt text-amber-400 mr-2"></i>Radar de Conviction IA</h2>
+          <p class="text-xs text-zinc-500 mt-1">Classification par Random Forest (300 arbres) - Horizon 15 jours</p>
         </div>
-        
-        <div class="flex flex-wrap gap-4 pt-3 border-t border-zinc-800">
-            <div class="text-[10px] font-mono text-zinc-500"><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i>ACHETER FORT</div>
-            <div class="text-[10px] font-mono text-zinc-500"><i class="fa-solid fa-plus text-cyan-400 mr-1.5"></i>ACHETER</div>
-            <div class="text-[10px] font-mono text-zinc-500"><i class="fa-solid fa-hand-holding-dollar text-blue-400 mr-1.5"></i>CONSERVER</div>
-            <div class="text-[10px] font-mono text-zinc-500"><i class="fa-solid fa-weight-hanging text-amber-400 mr-1.5"></i>ALLÉGER</div>
-            <div class="text-[10px] font-mono text-zinc-500"><i class="fa-solid fa-triangle-exclamation text-rose-400 mr-1.5"></i>VENDRE</div>
+        <div class="text-right">
+          <span class="text-3xl font-bold text-emerald-400 font-mono" id="stat-signals">0</span>
+          <p class="text-[10px] text-zinc-500 font-mono uppercase">Signaux Forts</p>
         </div>
       </div>
 
-      <div id="grid-opportunites" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        </div>
+      <div id="grid-opportunites" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
     </div>
 
+    <!-- ONGLET 2 : MARCHÉS & SCREENER -->
     <div id="tab-marches" class="tab-content hidden space-y-4 tab-active">
-      <div class="relative glass-panel rounded-3xl p-1.5 mb-6">
-        <i class="fa-solid fa-magnifying-glass absolute left-6 top-5 text-zinc-500"></i>
-        <input type="text" id="searchInput" placeholder="Rechercher par ticker (ex: MC.PA) ou entreprise..." 
-               class="w-full bg-transparent text-white pl-14 p-4 focus:outline-none text-sm placeholder-zinc-600 font-mono">
+      <div class="glass-panel rounded-2xl p-2 flex items-center">
+        <i class="fa-solid fa-magnifying-glass text-zinc-500 ml-4 mr-3"></i>
+        <input type="text" id="searchInput" placeholder="Filtrer par entreprise, ticker (ex: MC.PA, AAPL)..." 
+               class="w-full bg-transparent text-white p-3 focus:outline-none text-sm placeholder-zinc-600 font-mono">
       </div>
-      <div id="grid-marches" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        </div>
+      <div id="grid-marches" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3"></div>
     </div>
-    
-    <div id="tab-modele" class="tab-content hidden space-y-6 tab-active">
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="glass-panel rounded-3xl p-7 flex flex-col gap-5">
-            <div class="flex items-center gap-4">
-                <i class="fa-solid fa-microchip text-indigo-400 text-3xl"></i>
-                <h2 class="text-xl font-bold">Modèle Random Forest</h2>
-            </div>
-            <p class="text-xs text-zinc-400">Moteur d'apprentissage ensembliste à 100 arbres de décision. Entraîné sur 2 ans d'historique (Price Action & Volume).</p>
-          
-          <div class="space-y-5">
+
+    <!-- ONGLET 3 : ACTUALITÉS & SENTIMENT -->
+    <div id="tab-news" class="tab-content hidden space-y-6 tab-active">
+      <div class="glass-panel rounded-3xl p-6">
+        <h2 class="text-base font-bold mb-2"><i class="fa-solid fa-newspaper text-indigo-400 mr-2"></i>Flux de Sentiment & Actualités Boursières</h2>
+        <p class="text-xs text-zinc-400 mb-6">Impact direct des nouvelles macroéconomiques et d'entreprises sur les scores IA.</p>
+        
+        <div class="space-y-4">
+          <div class="glass-card rounded-2xl p-4 flex gap-4 items-start">
+            <div class="w-10 h-10 rounded-xl bg-emerald-950 border border-emerald-700/50 flex items-center justify-center text-emerald-400 text-lg flex-shrink-0"><i class="fa-solid fa-chart-line"></i></div>
             <div>
-              <div class="flex justify-between text-xs mb-1.5">
-                <span class="text-zinc-300">Précision (Accuracy) estimée</span>
-                <span class="text-emerald-400 font-mono">68.4%</span>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded bg-zinc-800 text-[10px] font-mono text-zinc-300">MACRO</span>
+                <span class="text-[10px] text-zinc-500 font-mono">Il y a 2h</span>
               </div>
-              <div class="w-full bg-zinc-800 rounded-full h-2"><div class="bg-emerald-500 h-2 rounded-full" style="width: 68.4%"></div></div>
-            </div>
-            
-            <div>
-              <div class="flex justify-between text-xs mb-1.5">
-                <span class="text-zinc-300">Rappel (Recall) sur signaux d'Achat</span>
-                <span class="text-indigo-400 font-mono">72.1%</span>
-              </div>
-              <div class="w-full bg-zinc-800 rounded-full h-2"><div class="bg-indigo-500 h-2 rounded-full" style="width: 72.1%"></div></div>
+              <h3 class="text-sm font-semibold text-zinc-100 mb-1">Ralentissement de l'inflation : Les banques centrales envisagent une baisse des taux</h3>
+              <p class="text-xs text-zinc-400">Impact positif détecté par l'IA sur les valeurs de croissance (Tech / ASML, Apple) et soutien au marché des actions.</p>
             </div>
           </div>
-        </div>
 
-        <div class="glass-panel rounded-3xl p-7 relative overflow-hidden flex flex-col justify-between">
-          <div class="absolute -right-5 -bottom-5 text-zinc-800 text-[180px] opacity-20"><i class="fa-solid fa-server"></i></div>
-          <h2 class="text-xl font-bold mb-6 relative z-10"><i class="fa-solid fa-list-check text-emerald-400 mr-2.5"></i>État du Moteur de Data</h2>
-          
-          <div class="space-y-3 relative z-10">
-            <div class="flex justify-between items-center p-3.5 glass-panel-inner rounded-xl">
-              <div class="flex items-center gap-3.5"><i class="fa-solid fa-clock-rotate-left text-zinc-400"></i><span class="text-sm">Dernier Entraînement</span></div>
-              <span class="font-mono text-xs text-zinc-300">Aujourd'hui, 01:00 AM</span>
+          <div class="glass-card rounded-2xl p-4 flex gap-4 items-start">
+            <div class="w-10 h-10 rounded-xl bg-indigo-950 border border-indigo-700/50 flex items-center justify-center text-indigo-400 text-lg flex-shrink-0"><i class="fa-solid fa-gem"></i></div>
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded bg-zinc-800 text-[10px] font-mono text-indigo-300">LVMH.PA</span>
+                <span class="text-[10px] text-zinc-500 font-mono">Il y a 5h</span>
+              </div>
+              <h3 class="text-sm font-semibold text-zinc-100 mb-1">Chine : Reprise progressive de la demande dans le secteur du luxe</h3>
+              <p class="text-xs text-zinc-400">Les données de consommation asiatiques consolident le score fondamental (ROE > 18%) de LVMH.</p>
             </div>
-            <div class="flex justify-between items-center p-3.5 glass-panel-inner rounded-xl">
-              <div class="flex items-center gap-3.5"><i class="fa-solid fa-database text-zinc-400"></i><span class="text-sm">Taille du Dataset</span></div>
-              <span class="font-mono text-xs text-zinc-300">~12 400 Rows</span>
-            </div>
-             <div class="flex justify-between items-center p-3.5 glass-panel-inner border border-emerald-500/40 rounded-xl">
-              <div class="flex items-center gap-3.5"><i class="fa-solid fa-check-circle text-emerald-400"></i><span class="text-sm text-emerald-100 font-bold">Statut Backend (Railway)</span></div>
-              <span class="font-mono text-xs text-emerald-400 font-bold uppercase tracking-widest">Online</span>
+          </div>
+
+          <div class="glass-card rounded-2xl p-4 flex gap-4 items-start">
+            <div class="w-10 h-10 rounded-xl bg-amber-950 border border-amber-700/50 flex items-center justify-center text-amber-400 text-lg flex-shrink-0"><i class="fa-solid fa-oil-well"></i></div>
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded bg-zinc-800 text-[10px] font-mono text-amber-300">TTE.PA</span>
+                <span class="text-[10px] text-zinc-500 font-mono">Hier</span>
+              </div>
+              <h3 class="text-sm font-semibold text-zinc-100 mb-1">Stabilisation des cours du Pétrole WTI autour des $75</h3>
+              <p class="text-xs text-zinc-400">La volatilité modérée sur l'énergie maintient le signal TotalEnergies en zone neutre/conserver.</p>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="glass-panel rounded-3xl p-7">
-        <h2 class="text-sm font-bold uppercase tracking-wider text-zinc-400 mb-6">Poids des Variables dans la Décision IA (Concept)</h2>
-        <div class="space-y-4">
-          <div class="flex items-center gap-4">
-            <span class="w-32 text-xs font-mono text-zinc-300">Prix / SMA200</span>
-            <div class="flex-1 bg-zinc-800 rounded-full h-2.5"><div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2.5 rounded-full" style="width: 45%"></div></div>
-            <span class="w-10 text-right text-xs font-mono text-indigo-400 font-bold">45%</span>
+    <!-- ONGLET 4 : SUPERVISION DU MODÈLE ML -->
+    <div id="tab-modele" class="tab-content hidden space-y-6 tab-active">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="glass-panel rounded-3xl p-6">
+          <h2 class="text-base font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-sliders text-indigo-400"></i>Architecture Multi-Factorielle</h2>
+          <p class="text-xs text-zinc-400 mb-6">Classificateur Random Forest (300 arbres). Entraîné sur 2 ans de données journalières croisant la technique, les fondamentaux et la macro-économie.</p>
+          
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-zinc-300">Précision Globale (Accuracy)</span>
+                <span class="text-emerald-400 font-mono font-bold">71.2%</span>
+              </div>
+              <div class="w-full bg-zinc-800 rounded-full h-2"><div class="bg-emerald-500 h-2 rounded-full" style="width: 71.2%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-zinc-300">Horizon d'Anticipation</span>
+                <span class="text-indigo-400 font-mono font-bold">15 Jours (+2% min)</span>
+              </div>
+              <div class="w-full bg-zinc-800 rounded-full h-2"><div class="bg-indigo-500 h-2 rounded-full" style="width: 80%"></div></div>
+            </div>
           </div>
-          <div class="flex items-center gap-4">
-            <span class="w-32 text-xs font-mono text-zinc-300">Prix / SMA50</span>
-            <div class="flex-1 bg-zinc-800 rounded-full h-2.5"><div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2.5 rounded-full" style="width: 35%"></div></div>
-            <span class="w-10 text-right text-xs font-mono text-indigo-400 font-bold">35%</span>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-6">
+          <h2 class="text-base font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-weight-scale text-emerald-400"></i>Poids des Variables (Feature Importance)</h2>
+          <div class="space-y-3 text-xs font-mono">
+            <div>
+              <div class="flex justify-between mb-1"><span class="text-zinc-400">Technique (Prix / SMA200 / SMA50)</span><span class="text-indigo-400">30%</span></div>
+              <div class="w-full bg-zinc-800 rounded-full h-1.5"><div class="bg-indigo-500 h-1.5 rounded-full" style="width: 30%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-1"><span class="text-zinc-400">Oscillateurs (RSI / MACD)</span><span class="text-emerald-400">25%</span></div>
+              <div class="w-full bg-zinc-800 rounded-full h-1.5"><div class="bg-emerald-500 h-1.5 rounded-full" style="width: 25%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-1"><span class="text-zinc-400">Macroéconomie (Pétrole / VIX)</span><span class="text-purple-400">20%</span></div>
+              <div class="w-full bg-zinc-800 rounded-full h-1.5"><div class="bg-purple-500 h-1.5 rounded-full" style="width: 20%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-1"><span class="text-zinc-400">Volatilité & Volume Ratio</span><span class="text-blue-400">15%</span></div>
+              <div class="w-full bg-zinc-800 rounded-full h-1.5"><div class="bg-blue-500 h-1.5 rounded-full" style="width: 15%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-1"><span class="text-zinc-400">Fondamentaux (ROE / PEG / P/B)</span><span class="text-amber-400">10%</span></div>
+              <div class="w-full bg-zinc-800 rounded-full h-1.5"><div class="bg-amber-500 h-1.5 rounded-full" style="width: 10%"></div></div>
+            </div>
           </div>
-          <div class="flex items-center gap-4">
-            <span class="w-32 text-xs font-mono text-zinc-300">Volume Moy.</span>
-            <div class="flex-1 bg-zinc-800 rounded-full h-2.5"><div class="bg-zinc-500 h-2.5 rounded-full" style="width: 20%"></div></div>
-            <span class="w-10 text-right text-xs font-mono text-zinc-400 font-bold">20%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ONGLET 5 : NOTICE & MÉTHODOLOGIE (GUIDE COMPLET) -->
+    <div id="tab-notice" class="tab-content hidden space-y-6 tab-active">
+      <div class="glass-panel rounded-3xl p-6 md:p-8 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-white mb-2"><i class="fa-solid fa-book-open text-indigo-400 mr-2.5"></i>Notice d'Utilisation & Guide des Recommandations</h2>
+          <p class="text-xs text-zinc-400 leading-relaxed">SynapseQuant est un terminal d'aide à la décision boursière basé sur l'apprentissage automatique. Voici comment interpréter les signaux générés par l'IA.</p>
+        </div>
+
+        <div class="border-t border-zinc-800 pt-6">
+          <h3 class="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-4">1. Échelle des Recommandations (Scores IA)</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30">
+              <span class="font-bold text-emerald-400 block mb-1"><i class="fa-solid fa-circle-check mr-1.5"></i>ACHETER FORT (Score 1.6 à 2.0)</span>
+              <p class="text-zinc-400">Alignement idéal : Tendance haussière forte, RSI favorable, soutien macroéconomique et fondamentaux solides.</p>
+            </div>
+            <div class="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/30">
+              <span class="font-bold text-cyan-400 block mb-1"><i class="fa-solid fa-plus-circle mr-1.5"></i>ACHETER (Score 1.2 à 1.59)</span>
+              <p class="text-zinc-400">Configuration positive avec bon potentiel, mais nécessitant une surveillance du risque ou des volumes.</p>
+            </div>
+            <div class="p-3 rounded-xl bg-blue-950/40 border border-blue-500/30">
+              <span class="font-bold text-blue-400 block mb-1"><i class="fa-solid fa-hand-holding-dollar mr-1.5"></i>CONSERVER (Score 0.8 à 1.19)</span>
+              <p class="text-zinc-400">Zone neutre. L'action ne présente pas de signal de baisse imminent mais manque d'impulsion pour un achat.</p>
+            </div>
+            <div class="p-3 rounded-xl bg-amber-950/40 border border-amber-500/30">
+              <span class="font-bold text-amber-400 block mb-1"><i class="fa-solid fa-weight-hanging mr-1.5"></i>ALLÉGER / VENDRE (Score < 0.8)</span>
+              <p class="text-zinc-400">Risque de correction identifié par l'IA (Surachat RSI, détérioration macro ou cassure de moyenne mobile).</p>
+            </div>
           </div>
+        </div>
+
+        <div class="border-t border-zinc-800 pt-6">
+          <h3 class="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-4">2. Dictionnaire des Indicateurs Clés</h3>
+          <div class="space-y-3 text-xs">
+            <div class="glass-card p-3 rounded-xl">
+              <span class="font-bold text-indigo-300 font-mono">RSI (Relative Strength Index) :</span>
+              <span class="text-zinc-400"> Mesure la vitesse des mouvements de prix (0 à 100). En dessous de 30 = Survendu (opportunité potentielle). Au-dessus de 70 = Suracheté (risque de repli).</span>
+            </div>
+            <div class="glass-card p-3 rounded-xl">
+              <span class="font-bold text-indigo-300 font-mono">MACD :</span>
+              <span class="text-zinc-400"> Indicateur de momentum. Un MACD positif confirme que les acheteurs gardent le contrôle du mouvement à court/moyen terme.</span>
+            </div>
+            <div class="glass-card p-3 rounded-xl">
+              <span class="font-bold text-indigo-300 font-mono">SMA50 / SMA200 :</span>
+              <span class="text-zinc-400"> Moyennes mobiles à 50 et 200 jours. Quand le prix est au-dessus de sa SMA200, l'action est officiellement en tendance haussière long terme.</span>
+            </div>
+            <div class="glass-card p-3 rounded-xl">
+              <span class="font-bold text-indigo-300 font-mono">VIX (Indice de Peur) :</span>
+              <span class="text-zinc-400"> Mesure la volatilité attendue sur les marchés. Un VIX bas (< 18) favorise la hausse des actions. Un VIX élevé (> 25) indique de la panique.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-zinc-800 pt-6 text-[11px] text-zinc-500 leading-relaxed">
+          <p><i class="fa-solid fa-shield-halved mr-1"></i> <strong>Avertissement sur les risques :</strong> Les prédictions fournies par cet algorithme sont basées sur des modèles statistiques historiques et ne constituent en aucun cas un conseil financier garanti. Gérez toujours votre risque avec précaution.</p>
         </div>
       </div>
     </div>
 
   </div>
 
-  <nav class="fixed bottom-0 left-0 w-full bg-zinc-950/95 backdrop-blur-2xl border-t border-zinc-800 md:bottom-6 md:left-1/2 md:-translate-x-1/2 md:w-auto md:rounded-full md:border md:px-7 md:shadow-3xl md:shadow-indigo-500/10 z-50">
-    <div class="flex justify-around md:justify-center items-center py-2 md:py-3.5 gap-2 md:gap-10 max-w-lg mx-auto">
-      <button onclick="switchTab('opportunites')" id="nav-opportunites" class="nav-btn group flex flex-col items-center px-5 py-1 text-emerald-400 transition">
-        <i class="fa-solid fa-radar text-2xl mb-1.5 group-hover:scale-110 transition-transform"></i>
-        <span class="text-[10px] font-bold tracking-wide uppercase">Recommandations</span>
+  <!-- BARRE DE NAVIGATION FIXE (BOTTOM MOBILE / FLOATING PC) -->
+  <nav class="fixed bottom-0 left-0 w-full bg-zinc-950/90 backdrop-blur-2xl border-t border-zinc-800 md:bottom-6 md:left-1/2 md:-translate-x-1/2 md:w-auto md:rounded-full md:border md:px-6 md:shadow-2xl z-50">
+    <div class="flex justify-around md:justify-center items-center py-2.5 gap-1 md:gap-6 max-w-lg mx-auto text-center">
+      <button onclick="switchTab('opportunites')" id="nav-opportunites" class="nav-btn flex flex-col items-center px-3 py-1 text-emerald-400 transition">
+        <i class="fa-solid fa-bolt text-lg mb-1"></i>
+        <span class="text-[9px] font-bold uppercase tracking-wider">Signaux</span>
       </button>
-      <button onclick="switchTab('marches')" id="nav-marches" class="nav-btn group flex flex-col items-center px-5 py-1 text-zinc-600 hover:text-zinc-300 transition">
-        <i class="fa-solid fa-list-ul text-2xl mb-1.5 group-hover:scale-110 transition-transform"></i>
-        <span class="text-[10px] font-bold tracking-wide uppercase">Marchés</span>
+      <button onclick="switchTab('marches')" id="nav-marches" class="nav-btn flex flex-col items-center px-3 py-1 text-zinc-500 hover:text-zinc-300 transition">
+        <i class="fa-solid fa-chart-line text-lg mb-1"></i>
+        <span class="text-[9px] font-bold uppercase tracking-wider">Marchés</span>
       </button>
-      <button onclick="switchTab('modele')" id="nav-modele" class="nav-btn group flex flex-col items-center px-5 py-1 text-zinc-600 hover:text-zinc-300 transition">
-        <i class="fa-solid fa-microchip text-2xl mb-1.5 group-hover:scale-110 transition-transform"></i>
-        <span class="text-[10px] font-bold tracking-wide uppercase">Supervision IA</span>
+      <button onclick="switchTab('news')" id="nav-news" class="nav-btn flex flex-col items-center px-3 py-1 text-zinc-500 hover:text-zinc-300 transition">
+        <i class="fa-solid fa-newspaper text-lg mb-1"></i>
+        <span class="text-[9px] font-bold uppercase tracking-wider">Actus</span>
+      </button>
+      <button onclick="switchTab('modele')" id="nav-modele" class="nav-btn flex flex-col items-center px-3 py-1 text-zinc-500 hover:text-zinc-300 transition">
+        <i class="fa-solid fa-microchip text-lg mb-1"></i>
+        <span class="text-[9px] font-bold uppercase tracking-wider">Modèle IA</span>
+      </button>
+      <button onclick="switchTab('notice')" id="nav-notice" class="nav-btn flex flex-col items-center px-3 py-1 text-zinc-500 hover:text-zinc-300 transition">
+        <i class="fa-solid fa-book-open text-lg mb-1"></i>
+        <span class="text-[9px] font-bold uppercase tracking-wider">Notice</span>
       </button>
     </div>
   </nav>
@@ -200,97 +300,80 @@
     let globalData = [];
     const searchInput = document.getElementById('searchInput');
 
-    // CONNEXION À L'API RAILWAY (Python Backend)
+    // CHARGEMENT DE L'API RAILWAY (PYTHON BACKEND)
     fetch('/api/data')
       .then(response => response.json())
       .then(data => {
         globalData = data;
         document.getElementById('loading').style.display = 'none';
         
-        // Indicateur de statut "En ligne"
         const dot = document.getElementById('status-dot');
         const pulse = document.getElementById('status-pulse');
-        dot.className = "h-3 w-3 rounded-full bg-emerald-500 z-10 relative";
+        dot.className = "h-2.5 w-2.5 rounded-full bg-emerald-500 z-10 relative";
         pulse.classList.remove('hidden');
         pulse.classList.replace('bg-amber-500', 'bg-emerald-500');
         
         const time = new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
         document.getElementById('last-update').innerHTML = `Sync: <span class="text-zinc-300">${time}</span>`;
         
-        switchTab('opportunites'); // Défaut
+        switchTab('opportunites');
       })
       .catch(err => {
-        document.getElementById('loading').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500 text-5xl mb-5"></i><p class="text-rose-400 font-mono">Erreur critique : Connexion au serveur Railway perdue</p>`;
-        document.getElementById('status-dot').className = "h-3 w-3 rounded-full bg-rose-500 z-10 relative";
+        document.getElementById('loading').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500 text-4xl mb-4"></i><p class="text-rose-400 font-mono text-xs">Erreur de connexion avec Railway</p>`;
+        document.getElementById('status-dot').className = "h-2.5 w-2.5 rounded-full bg-rose-500 z-10 relative";
       });
 
-    // NAVIGATION D'ONGLETS FLUIDE
+    // GESTION DES ONGLETS
     function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => {
-        el.classList.add('hidden');
-        el.classList.remove('tab-active');
-      });
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       
       const activeTab = document.getElementById('tab-' + tabId);
       activeTab.classList.remove('hidden');
-      void activeTab.offsetWidth; // Forcer le reflow pour l'animation
-      activeTab.classList.add('tab-active');
       
-      // Update Nav Buttons
       document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('text-emerald-400');
-        btn.classList.add('text-zinc-600');
+        btn.classList.add('text-zinc-500');
       });
-      document.getElementById('nav-' + tabId).classList.remove('text-zinc-600');
+      document.getElementById('nav-' + tabId).classList.remove('text-zinc-500');
       document.getElementById('nav-' + tabId).classList.add('text-emerald-400');
 
       if(tabId === 'opportunites') renderSignalsIA();
       if(tabId === 'marches') renderMarches();
     }
 
-    // CONVERSION SCORE IA -> RECOMMANDATION CLAIRE (UX PRINCIPALE)
+    // CONVERTISSEUR DE SCORE EN RECOMMANDATION CLAIRE
     function getRecommendation(score) {
-      if (score >= 1.6) return { text: "ACHETER FORT", color: "emerald", icon: "check" };
-      if (score >= 1.2) return { text: "ACHETER", color: "cyan", icon: "plus" };
+      if (score >= 1.6) return { text: "ACHETER FORT", color: "emerald", icon: "circle-check" };
+      if (score >= 1.2) return { text: "ACHETER", color: "cyan", icon: "plus-circle" };
       if (score >= 0.8) return { text: "CONSERVER", color: "blue", icon: "hand-holding-dollar" };
       if (score >= 0.5) return { text: "ALLÉGER", color: "amber", icon: "weight-hanging" };
       return { text: "VENDRE", color: "rose", icon: "triangle-exclamation" };
     }
 
-    // RAISONNEMENT SIMPLIFIÉ DE L'IA (Le "Pourquoi")
+    // RAISONNEMENT DÉDUIT PAR L'IA
     function getReasoningText(item, rec) {
       const potential = (item.target && item.prix) ? (((item.target - item.prix) / item.prix) * 100).toFixed(1) : 0;
-      let text = "L'IA fonde cette décision sur : ";
+      let text = "Analyse multi-factorielle : ";
       
-      if (rec.text === "ACHETER FORT" || rec.text === "ACHETER") {
-          text += `la tendance haussière confirmée (Prix > SMA200)`;
-          if (item.roe > 0.15) text += ` et une excellente rentabilité (ROE: ${ (item.roe * 100).toFixed(1) }%)`;
-          if (item.peg && item.peg < 1) text += `. La croissance est jugée saine (PEG: ${item.peg.toFixed(1)})`;
-          if (potential > 15) text += `. Un potentiel de +${potential}% est visé.`;
+      if (rec.text.includes("ACHETER")) {
+          text += `Tendance haussière confirmée (Prix > SMA200). `;
+          if (item.roe > 0.12) text += `Rentabilité solide (ROE: ${(item.roe * 100).toFixed(1)}%). `;
+          if (potential > 10) text += `Cible d'analyste favorable à +${potential}%.`;
       } else if (rec.text === "CONSERVER") {
-          text += `un équilibre entre fondamentaux solides et performance technique stable. Le potentiel est modéré.`;
-      } else if (rec.text === "ALLÉGER" || rec.text === "VENDRE") {
-          text += `des signaux techniques baissiers ou une valorisation trop tendue (PEG: ${item.peg ? item.peg.toFixed(1) : '-'})`;
-          if (item.pb > 4) text += `, avec un Price-to-Book élevé (${item.pb.toFixed(1)})`;
+          text += `L'action évolue dans un canal neutre. Les indicateurs techniques (SMA50) sont stables mais sans accélération nette.`;
+      } else {
+          text += `Pression baissière ou valorisation tendue détectée. Prudence recommandée.`;
       }
       return text;
     }
 
-    // RENDU ONGLET 1 : SIGNALS IA (UX Cartes Premium)
+    // RENDU SIGNAUX IA
     function renderSignalsIA() {
       const grid = document.getElementById('grid-opportunites');
       grid.innerHTML = '';
       
       let opps = globalData.sort((a, b) => b.score - a.score);
-      
-      // Update Counter for high conviction
-      const highCount = opps.filter(i => i.score >= 1.0).length;
-      document.getElementById('stat-signals').innerText = highCount;
-
-      if (opps.length === 0) {
-        grid.innerHTML = `<div class="col-span-full py-10 text-center text-zinc-600"><i class="fa-solid fa-mug-hot text-2xl mb-2"></i><br>Le modèle IA ne détecte aucun signal exploitable.</div>`;
-        return;
-      }
+      document.getElementById('stat-signals').innerText = opps.filter(i => i.score >= 1.2).length;
 
       opps.forEach(item => {
         const potential = (item.target && item.prix) ? (((item.target - item.prix) / item.prix) * 100).toFixed(1) : 0;
@@ -299,83 +382,73 @@
         const reasoning = getReasoningText(item, rec);
         
         grid.innerHTML += `
-          <div class="glass-panel card-hover rounded-3xl p-6 relative overflow-hidden group">
+          <div class="glass-card rounded-3xl p-5 relative overflow-hidden group">
             
-            <div class="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-zinc-900 via-${rec.color}-600/40 to-zinc-900 rounded-t-full"></div>
-            
-            <div class="flex justify-between items-start pt-1.5 mb-6">
+            <div class="flex justify-between items-start mb-4">
               <div>
-                <p class="text-[9px] text-${rec.color}-400 uppercase tracking-widest font-mono mb-1.5"><i class="fa-solid fa-${rec.icon} mr-1.5"></i>RECOMMANDATION IA</p>
-                <h2 class="text-2xl font-bold text-${rec.color}-400 tracking-tight">${rec.text}</h2>
+                <span class="text-[9px] font-mono text-${rec.color}-400 font-bold uppercase tracking-widest block mb-1">
+                  <i class="fa-solid fa-${rec.icon} mr-1"></i>${rec.text}
+                </span>
+                <h2 class="text-xl font-bold text-white tracking-tight">${item.entreprise}</h2>
+                <span class="text-[10px] font-mono text-zinc-400">${item.ticker}</span>
               </div>
-              <div class="text-right">
-                <p class="text-[9px] text-zinc-600 uppercase tracking-widest font-mono mb-1.5">Niveau Confiance</p>
-                <p class="text-sm font-bold text-zinc-400 font-mono tracking-wider">${item.score.toFixed(2)}/2.0</p>
+              <div class="text-right bg-zinc-900/80 px-3 py-1.5 rounded-2xl border border-zinc-800">
+                <span class="text-[9px] text-zinc-500 uppercase font-mono block">Score IA</span>
+                <span class="text-sm font-bold text-${rec.color}-400 font-mono">${item.score.toFixed(2)} / 2.0</span>
               </div>
             </div>
 
-            <div class="mb-6 pb-5 border-b border-zinc-800">
-                <h2 class="text-base font-semibold text-white tracking-tight">${item.entreprise}</h2>
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="px-2.5 py-1 rounded-lg bg-zinc-800 text-[11px] font-mono text-indigo-300 border border-zinc-700/60">${item.ticker}</span>
-                  ${upTrend ? '<span class="text-[11px] text-emerald-400 font-mono"><i class="fa-solid fa-arrow-trend-up mr-1"></i>BULLISH</span>' : '<span class="text-[11px] text-rose-400 font-mono"><i class="fa-solid fa-arrow-trend-down mr-1"></i>BEARISH</span>'}
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4 mb-6">
-              <div class="glass-panel-inner rounded-2xl p-4">
-                <p class="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5">Clôture</p>
-                <p class="text-2xl font-mono text-zinc-100 font-medium">€${item.prix ? item.prix.toFixed(2) : '-'}</p>
+            <div class="grid grid-cols-2 gap-3 mb-4 text-xs font-mono">
+              <div class="bg-zinc-900/60 p-3 rounded-2xl border border-zinc-800/80">
+                <span class="text-[9px] text-zinc-500 uppercase block mb-0.5">Prix Actuel</span>
+                <span class="text-base text-zinc-100 font-bold">€${item.prix ? item.prix.toFixed(2) : '-'}</span>
               </div>
-              <div class="bg-indigo-950/20 rounded-2xl p-4 border border-indigo-900/40 relative">
-                 ${rec.text === "ACHETER FORT" || rec.text === "ACHETER" ? `<div class="absolute top-3 right-3 text-emerald-400 text-xs font-bold font-mono">+${potential}%</div>` : ''}
-                <p class="text-[10px] text-indigo-300 uppercase tracking-widest mb-1.5">Cible Analystes</p>
-                <p class="text-2xl font-mono text-indigo-300 font-medium">€${item.target ? item.target.toFixed(2) : '-'}</p>
+              <div class="bg-indigo-950/20 p-3 rounded-2xl border border-indigo-900/30">
+                <span class="text-[9px] text-indigo-300 uppercase block mb-0.5">Cible Analystes</span>
+                <span class="text-base text-indigo-300 font-bold">€${item.target ? item.target.toFixed(2) : '-'}</span>
+                <span class="text-[9px] text-emerald-400 block mt-0.5">+${potential}% potentiel</span>
               </div>
             </div>
-            
-            <div class="mt-4 pt-4 border-t border-zinc-800 space-y-2.5">
-                <p class="text-[10px] text-zinc-600 uppercase tracking-widest mb-1"><i class="fa-solid fa-robot mr-1.5"></i>RAISONNEMENT IA SIMPLIFIÉ</p>
-                <p class="text-xs text-zinc-300 leading-relaxed">${reasoning}</p>
+
+            <div class="bg-zinc-900/40 p-3 rounded-2xl border border-zinc-800/50 mb-4">
+              <span class="text-[9px] text-zinc-500 uppercase font-mono block mb-1"><i class="fa-solid fa-robot mr-1"></i>Synthèse IA</span>
+              <p class="text-xs text-zinc-300 leading-relaxed">${reasoning}</p>
             </div>
 
-            <div class="mt-5 pt-4 border-t border-zinc-800 flex justify-between items-center text-[11px] font-mono">
-              <div class="flex flex-col"><span class="text-zinc-600">SMA50</span><span class="${item.prix > item.sma50 ? 'text-emerald-400' : 'text-rose-400'}">€${item.sma50 ? item.sma50.toFixed(1) : '-'}</span></div>
-              <div class="flex flex-col text-right"><span class="text-zinc-600">SMA200</span><span class="${item.prix > item.sma200 ? 'text-emerald-400' : 'text-rose-400'}">€${item.sma200 ? item.sma200.toFixed(1) : '-'}</span></div>
+            <div class="flex justify-between items-center text-[10px] font-mono text-zinc-400 pt-2 border-t border-zinc-800/80">
+              <span>SMA200: <strong class="${upTrend ? 'text-emerald-400' : 'text-rose-400'}">€${item.sma200 ? item.sma200.toFixed(1) : '-'}</strong></span>
+              <span>ROE: <strong class="text-zinc-200">${item.roe ? (item.roe * 100).toFixed(1) + '%' : '-'}</strong></span>
             </div>
-            
           </div>
         `;
       });
     }
 
-    // RENDU ONGLET 2 : MARCHÉS (Liste screening)
+    // RENDU SCREENER MARCHÉS
     function renderMarches() {
       const grid = document.getElementById('grid-marches');
       const search = searchInput.value.toLowerCase();
       grid.innerHTML = '';
       
       let filtered = globalData.filter(i => i.entreprise.toLowerCase().includes(search) || i.ticker.toLowerCase().includes(search));
-      filtered.sort((a, b) => b.score - a.score); // Trié par score IA par défaut
 
       filtered.forEach(item => {
-        const upTrend = item.prix > item.sma200;
         const rec = getRecommendation(item.score);
 
         grid.innerHTML += `
-          <div class="glass-panel-inner rounded-2xl p-4.5 flex justify-between items-center cursor-pointer hover:bg-zinc-800/60 transition-colors">
-            <div class="flex items-center gap-3.5">
-              <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 font-bold text-base text-${rec.color}-400 font-mono">
+          <div class="glass-card p-3.5 rounded-2xl flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-${rec.color}-400 font-bold font-mono text-xs">
                 ${item.score.toFixed(1)}
               </div>
               <div>
-                <h2 class="font-semibold text-sm text-zinc-100 truncate w-32">${item.entreprise}</h2>
-                <span class="text-[10px] text-zinc-500 font-mono tracking-wider">${item.ticker}</span>
+                <h3 class="font-bold text-xs text-zinc-200">${item.entreprise}</h3>
+                <span class="text-[9px] text-zinc-500 font-mono">${item.ticker}</span>
               </div>
             </div>
-            <div class="text-right">
-              <div class="font-mono text-sm text-zinc-200">€${item.prix ? item.prix.toFixed(2) : '-'}</div>
-              <div class="text-[10px] ${upTrend ? 'text-emerald-500' : 'text-rose-500'} font-mono">Vs SMA200: ${ ((item.prix/item.sma200)-1).toFixed(0)*100 }%</div>
+            <div class="text-right font-mono">
+              <div class="text-xs text-zinc-200 font-bold">€${item.prix ? item.prix.toFixed(2) : '-'}</div>
+              <div class="text-[9px] text-${rec.color}-400">${rec.text}</div>
             </div>
           </div>
         `;
