@@ -1,25 +1,212 @@
-card.innerHTML = `
-          <div class="flex justify-between items-start mb-4">
-            <h2 class="text-xl font-bold">${item.entreprise} <span class="text-xs text-slate-500 font-mono ml-2">${item.ticker}</span></h2>
-            <div class="${item.score >= 1.2 ? 'text-emerald-400' : 'text-slate-400'} font-bold text-lg">
-              <i class="fa-solid fa-robot"></i> ${item.score}/2.0
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4 text-sm mb-4">
-            <div>
-              <div class="text-slate-400">Prix</div>
-              <div class="text-xl font-mono">€${item.prix ? item.prix.toFixed(2) : '-'}</div>
-            </div>
-            <div class="text-right">
-              <div class="text-slate-400">Cible</div>
-              <div class="text-xl font-mono text-indigo-300">€${item.target ? item.target.toFixed(2) : '-'}</div>
-            </div>
-          </div>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <!-- Méta-tags pour forcer l'affichage "Application Native" sur mobile -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="/static/manifest.json">
+  
+  <title>Quant Terminal ML</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Masque la scrollbar pour un look plus "App" */
+    ::-webkit-scrollbar { width: 0px; background: transparent; }
+    body { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased pb-20 md:pb-0 pt-4 md:pt-8">
+  
+  <div class="max-w-7xl mx-auto px-4">
+    
+    <!-- En-tête -->
+    <div class="flex justify-between items-end mb-6 border-b border-slate-800 pb-4">
+      <div>
+        <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+          <i class="fa-solid fa-layer-group text-indigo-400 mr-2"></i>QuantML
+        </h1>
+        <p class="text-xs text-slate-500 font-mono mt-1" id="last-update">Synchronisation...</p>
+      </div>
+      <div id="status-dot" class="h-3 w-3 rounded-full bg-amber-500 animate-pulse"></div>
+    </div>
 
-          <div class="grid grid-cols-3 gap-2 text-[10px] text-slate-300 bg-slate-900 p-2 rounded border border-slate-700">
-            <div class="flex flex-col"><span class="text-slate-500">PEG (Croissance)</span> <span>${item.peg ? item.peg.toFixed(2) : 'N/A'}</span></div>
-            <div class="flex flex-col"><span class="text-slate-500">P/B (Banques)</span> <span>${item.pb ? item.pb.toFixed(2) : 'N/A'}</span></div>
-            <div class="flex flex-col text-right"><span class="text-slate-500">ROE (Rentabilité)</span> <span>${item.roe ? (item.roe * 100).toFixed(1) + '%' : 'N/A'}</span></div>
+    <!-- Écran de chargement -->
+    <div id="loading" class="flex flex-col items-center justify-center py-32">
+      <i class="fa-solid fa-circle-notch fa-spin text-4xl text-indigo-500 mb-4"></i>
+      <p class="text-slate-400 text-sm animate-pulse">Inférence du modèle IA en cours...</p>
+    </div>
+
+    <!-- ONGLET 1 : Opportunités IA (Score >= 1.0) -->
+    <div id="tab-opportunites" class="tab-content hidden space-y-4">
+      <div class="bg-indigo-900/20 border border-indigo-500/30 rounded-xl p-4 mb-4">
+        <h2 class="text-indigo-400 font-bold text-sm mb-1"><i class="fa-solid fa-crosshairs mr-1"></i> Top Signaux Achat</h2>
+        <p class="text-xs text-slate-400">Actions identifiées par l'algorithme avec une décôte et une tendance positive.</p>
+      </div>
+      <div id="grid-opportunites" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+
+    <!-- ONGLET 2 : Marchés (Toutes les actions) -->
+    <div id="tab-marches" class="tab-content hidden space-y-4">
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500"></i>
+        <input type="text" id="searchInput" placeholder="Rechercher un ticker ou une entreprise..." 
+               class="w-full bg-slate-800/50 text-white pl-10 p-2.5 rounded-xl border border-slate-700 focus:border-indigo-500 focus:outline-none text-sm">
+      </div>
+      <div id="grid-marches" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+    </div>
+
+    <!-- ONGLET 3 : Fondamentaux (Données brutes) -->
+    <div id="tab-data" class="tab-content hidden overflow-x-auto">
+      <table class="w-full text-left text-sm whitespace-nowrap">
+        <thead class="text-xs text-slate-400 bg-slate-800/50 uppercase">
+          <tr>
+            <th class="px-4 py-3 rounded-tl-lg">Ticker</th>
+            <th class="px-4 py-3">Prix</th>
+            <th class="px-4 py-3">Cible</th>
+            <th class="px-4 py-3">PEG (Tech)</th>
+            <th class="px-4 py-3">P/B (Banque)</th>
+            <th class="px-4 py-3 rounded-tr-lg">ROE</th>
+          </tr>
+        </thead>
+        <tbody id="table-data" class="divide-y divide-slate-800"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Barre de navigation type Application Mobile (fixe en bas) -->
+  <nav class="fixed bottom-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 md:relative md:border-none md:bg-transparent md:mt-10 z-50">
+    <div class="flex justify-around items-center p-2 max-w-lg mx-auto md:justify-start md:gap-8">
+      <button onclick="switchTab('opportunites')" id="nav-opportunites" class="nav-btn flex flex-col items-center p-2 text-indigo-400 transition">
+        <i class="fa-solid fa-bolt text-lg mb-1"></i><span class="text-[10px] font-bold">Signaux IA</span>
+      </button>
+      <button onclick="switchTab('marches')" id="nav-marches" class="nav-btn flex flex-col items-center p-2 text-slate-500 hover:text-slate-300 transition">
+        <i class="fa-solid fa-chart-line text-lg mb-1"></i><span class="text-[10px] font-bold">Marchés</span>
+      </button>
+      <button onclick="switchTab('data')" id="nav-data" class="nav-btn flex flex-col items-center p-2 text-slate-500 hover:text-slate-300 transition">
+        <i class="fa-solid fa-server text-lg mb-1"></i><span class="text-[10px] font-bold">Data Set</span>
+      </button>
+    </div>
+  </nav>
+
+  <script>
+    let globalData = [];
+
+    // Connexion à l'API
+    fetch('/api/data')
+      .then(response => response.json())
+      .then(data => {
+        globalData = data;
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('status-dot').className = "h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]";
+        document.getElementById('last-update').innerText = "À jour : " + new Date().toLocaleTimeString('fr-FR');
+        
+        switchTab('opportunites'); // Ouvre l'onglet Signaux IA par défaut
+      })
+      .catch(err => {
+        document.getElementById('loading').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500 text-3xl mb-2"></i><p class="text-rose-400">Erreur réseau</p>`;
+        document.getElementById('status-dot').className = "h-3 w-3 rounded-full bg-rose-500";
+      });
+
+    // Gestion de la navigation par onglets
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+      
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-indigo-400');
+        btn.classList.add('text-slate-500');
+      });
+      document.getElementById('nav-' + tabId).classList.remove('text-slate-500');
+      document.getElementById('nav-' + tabId).classList.add('text-indigo-400');
+
+      if(tabId === 'opportunites') renderOpportunites();
+      if(tabId === 'marches') renderMarches();
+      if(tabId === 'data') renderData();
+    }
+
+    // Rendu Onglet 1 : Opportunités (Score >= 1.0)
+    function renderOpportunites() {
+      const grid = document.getElementById('grid-opportunites');
+      grid.innerHTML = '';
+      
+      let opps = globalData.filter(i => i.score >= 1.0).sort((a, b) => b.score - a.score);
+      if (opps.length === 0) grid.innerHTML = `<p class="text-slate-500 text-sm">Aucun signal majeur détecté aujourd'hui.</p>`;
+
+      opps.forEach(item => {
+        const potential = (item.target && item.prix) ? (((item.target - item.prix) / item.prix) * 100).toFixed(1) : 0;
+        grid.innerHTML += `
+          <div class="bg-slate-800/80 backdrop-blur rounded-2xl p-5 border border-slate-700/50 shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg">Score: ${item.score}/2.0</div>
+            <h2 class="text-lg font-bold mt-1">${item.entreprise} <span class="text-xs text-slate-500 font-mono">${item.ticker}</span></h2>
+            
+            <div class="flex justify-between items-end mt-4">
+              <div>
+                <p class="text-[10px] text-slate-400 uppercase">Prix Clôture</p>
+                <p class="text-2xl font-light">€${item.prix ? item.prix.toFixed(2) : '-'}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-[10px] text-slate-400 uppercase">Potentiel Cible</p>
+                <p class="text-lg font-bold text-emerald-400">+${potential}%</p>
+              </div>
+            </div>
+            
+            <div class="mt-4 pt-3 border-t border-slate-700/50 flex gap-2">
+              <span class="text-[10px] bg-slate-900 px-2 py-1 rounded text-slate-300">SMA50: ${item.sma50 ? item.sma50.toFixed(1) : '-'}</span>
+              <span class="text-[10px] bg-slate-900 px-2 py-1 rounded text-slate-300">SMA200: ${item.sma200 ? item.sma200.toFixed(1) : '-'}</span>
+            </div>
           </div>
         `;
+      });
+    }
+
+    // Rendu Onglet 2 : Marchés complets
+    function renderMarches() {
+      const grid = document.getElementById('grid-marches');
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      grid.innerHTML = '';
+      
+      let filtered = globalData.filter(i => i.entreprise.toLowerCase().includes(search) || i.ticker.toLowerCase().includes(search));
+      filtered.sort((a, b) => a.entreprise.localeCompare(b.entreprise));
+
+      filtered.forEach(item => {
+        grid.innerHTML += `
+          <div class="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 flex justify-between items-center">
+            <div>
+              <h2 class="font-bold text-sm">${item.entreprise}</h2>
+              <span class="text-[10px] text-slate-500 font-mono">${item.ticker}</span>
+            </div>
+            <div class="text-right">
+              <div class="font-mono text-sm">€${item.prix ? item.prix.toFixed(2) : '-'}</div>
+              <div class="text-[10px] ${item.score >= 1 ? 'text-emerald-400' : 'text-slate-400'}"><i class="fa-solid fa-robot"></i> ${item.score}</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // Rendu Onglet 3 : Données brutes (Secteurs)
+    function renderData() {
+      const tbody = document.getElementById('table-data');
+      tbody.innerHTML = '';
+      globalData.forEach(item => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-800/50 transition">
+            <td class="px-4 py-3 font-mono text-xs text-indigo-300">${item.ticker}</td>
+            <td class="px-4 py-3">€${item.prix ? item.prix.toFixed(2) : '-'}</td>
+            <td class="px-4 py-3">€${item.target ? item.target.toFixed(2) : '-'}</td>
+            <td class="px-4 py-3 ${item.peg && item.peg < 1 ? 'text-emerald-400' : ''}">${item.peg ? item.peg.toFixed(2) : '-'}</td>
+            <td class="px-4 py-3 ${item.pb && item.pb < 1.5 ? 'text-emerald-400' : ''}">${item.pb ? item.pb.toFixed(2) : '-'}</td>
+            <td class="px-4 py-3 font-bold">${item.roe ? (item.roe * 100).toFixed(1) + '%' : '-'}</td>
+          </tr>
+        `;
+      });
+    }
+
+    document.getElementById('searchInput').addEventListener('input', renderMarches);
+  </script>
+</body>
+</html>
