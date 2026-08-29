@@ -25,38 +25,38 @@ app.add_middleware(
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# UNIVERS MULTI-MARCHÉS (28 Actions majeures)
+# UNIVERS AVEC MARQUAGE ÉLIGIBILITÉ PEA / CTO
 MARKET_UNIVERSE = [
     # TECH & IA
-    {"entreprise": "Nvidia", "ticker": "NVDA", "sector": "Tech", "theme": "IA & Puces"},
-    {"entreprise": "Apple", "ticker": "AAPL", "sector": "Tech", "theme": "Big Tech US"},
-    {"entreprise": "Microsoft", "ticker": "MSFT", "sector": "Tech", "theme": "Big Tech US"},
-    {"entreprise": "Alphabet", "ticker": "GOOGL", "sector": "Tech", "theme": "Big Tech US"},
-    {"entreprise": "ASML", "ticker": "ASML.AS", "sector": "Tech", "theme": "IA & Puces"},
-    {"entreprise": "Capgemini", "ticker": "CAP.PA", "sector": "Tech", "theme": "CAC 40"},
+    {"entreprise": "Nvidia", "ticker": "NVDA", "sector": "Tech", "theme": "IA & Puces", "pea": False},
+    {"entreprise": "Apple", "ticker": "AAPL", "sector": "Tech", "theme": "Big Tech US", "pea": False},
+    {"entreprise": "Microsoft", "ticker": "MSFT", "sector": "Tech", "theme": "Big Tech US", "pea": False},
+    {"entreprise": "Alphabet", "ticker": "GOOGL", "sector": "Tech", "theme": "Big Tech US", "pea": False},
+    {"entreprise": "ASML", "ticker": "ASML.AS", "sector": "Tech", "theme": "IA & Puces", "pea": True},
+    {"entreprise": "Capgemini", "ticker": "CAP.PA", "sector": "Tech", "theme": "CAC 40", "pea": True},
     
     # LUXE & CONSOMMATION
-    {"entreprise": "LVMH", "ticker": "MC.PA", "sector": "Luxe", "theme": "Luxe Européen"},
-    {"entreprise": "Hermès", "ticker": "RMS.PA", "sector": "Luxe", "theme": "Luxe Européen"},
-    {"entreprise": "L'Oréal", "ticker": "OR.PA", "sector": "Luxe", "theme": "CAC 40"},
-    {"entreprise": "Kering", "ticker": "KER.PA", "sector": "Luxe", "theme": "Luxe Européen"},
-    {"entreprise": "Amazon", "ticker": "AMZN", "sector": "Consommation", "theme": "Big Tech US"},
-    {"entreprise": "Tesla", "ticker": "TSLA", "sector": "Consommation", "theme": "Automobile EV"},
+    {"entreprise": "LVMH", "ticker": "MC.PA", "sector": "Luxe", "theme": "Luxe Européen", "pea": True},
+    {"entreprise": "Hermès", "ticker": "RMS.PA", "sector": "Luxe", "theme": "Luxe Européen", "pea": True},
+    {"entreprise": "L'Oréal", "ticker": "OR.PA", "sector": "Luxe", "theme": "CAC 40", "pea": True},
+    {"entreprise": "Kering", "ticker": "KER.PA", "sector": "Luxe", "theme": "Luxe Européen", "pea": True},
+    {"entreprise": "Amazon", "ticker": "AMZN", "sector": "Consommation", "theme": "Big Tech US", "pea": False},
+    {"entreprise": "Tesla", "ticker": "TSLA", "sector": "Consommation", "theme": "Automobile EV", "pea": False},
 
     # ÉNERGIE & INDUSTRIE
-    {"entreprise": "TotalEnergies", "ticker": "TTE.PA", "sector": "Énergie", "theme": "Dividendes"},
-    {"entreprise": "ExxonMobil", "ticker": "XOM", "sector": "Énergie", "theme": "Pétrole US"},
-    {"entreprise": "Schneider Electric", "ticker": "SU.PA", "sector": "Industrie", "theme": "Transition Énergétique"},
-    {"entreprise": "Air Liquide", "ticker": "AI.PA", "sector": "Industrie", "theme": "CAC 40"},
+    {"entreprise": "TotalEnergies", "ticker": "TTE.PA", "sector": "Énergie", "theme": "Dividendes", "pea": True},
+    {"entreprise": "ExxonMobil", "ticker": "XOM", "sector": "Énergie", "theme": "Pétrole US", "pea": False},
+    {"entreprise": "Schneider Electric", "ticker": "SU.PA", "sector": "Industrie", "theme": "Transition Énergétique", "pea": True},
+    {"entreprise": "Air Liquide", "ticker": "AI.PA", "sector": "Industrie", "theme": "CAC 40", "pea": True},
 
     # FINANCE
-    {"entreprise": "BNP Paribas", "ticker": "BNP.PA", "sector": "Finance", "theme": "Dividendes"},
-    {"entreprise": "JPMorgan Chase", "ticker": "JPM", "sector": "Finance", "theme": "Finance US"},
-    {"entreprise": "AXA", "ticker": "CS.PA", "sector": "Finance", "theme": "Dividendes"},
+    {"entreprise": "BNP Paribas", "ticker": "BNP.PA", "sector": "Finance", "theme": "Dividendes", "pea": True},
+    {"entreprise": "JPMorgan Chase", "ticker": "JPM", "sector": "Finance", "theme": "Finance US", "pea": False},
+    {"entreprise": "AXA", "ticker": "CS.PA", "sector": "Finance", "theme": "Dividendes", "pea": True},
 
     # SANTÉ
-    {"entreprise": "Sanofi", "ticker": "SAN.PA", "sector": "Santé", "theme": "Pharma Europe"},
-    {"entreprise": "Novo Nordisk", "ticker": "NOVO-B.CO", "sector": "Santé", "theme": "Pharma Europe"}
+    {"entreprise": "Sanofi", "ticker": "SAN.PA", "sector": "Santé", "theme": "Pharma Europe", "pea": True},
+    {"entreprise": "Novo Nordisk", "ticker": "NOVO-B.CO", "sector": "Santé", "theme": "Pharma Europe", "pea": True}
 ]
 
 MODEL_PATH = "ml_model_gb.pkl"
@@ -82,13 +82,11 @@ def compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def refresh_market_data():
-    """Extraction Ultra-Rapide (Batch Download) en 2 secondes"""
     global DATA_CACHE
-    logger.info("Extraction Batch des Marchés Mondiaux...")
+    logger.info("Extraction Batch des Marchés...")
     
     tickers_list = [item["ticker"] for item in MARKET_UNIVERSE]
     try:
-        # Téléchargement groupé ultra-rapide de tout l'univers
         batch_df = yf.download(tickers_list, period="1y", group_by='ticker', progress=False)
         model = joblib.load(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
         results = []
@@ -124,14 +122,14 @@ def refresh_market_data():
                     "ticker": sym,
                     "sector": item["sector"],
                     "theme": item["theme"],
+                    "pea": item["pea"],
                     "prix": round(prix, 2),
                     "sma50": round(sma50, 2),
                     "sma200": round(sma200, 2),
                     "rsi": round(rsi, 1),
-                    "roe": 0.18, # Valeur estimée par défaut pour rapidité
+                    "roe": 0.18,
                     "target": round(prix * 1.12, 2),
-                    "score": score_ia,
-                    "patterns": ["Tendance Haussière"] if prix > sma200 else []
+                    "score": score_ia
                 })
             except Exception as e:
                 logger.error(f"Erreur parsing {item['ticker']}: {e}")
@@ -139,9 +137,9 @@ def refresh_market_data():
 
         if results:
             DATA_CACHE = results
-            logger.info(f"Marchés mis à jour : {len(DATA_CACHE)} actions chargées en cache.")
+            logger.info(f"Marchés mis à jour : {len(DATA_CACHE)} actions en cache.")
     except Exception as e:
-        logger.error(f"Erreur lors du Batch Download: {e}")
+        logger.error(f"Erreur Batch Download: {e}")
 
 def train_model():
     logger.info("Entraînement ML...")
@@ -201,8 +199,12 @@ def get_data():
     return DATA_CACHE
 
 @app.get("/api/markowitz")
-def get_markowitz_allocation(risk_profile: str = Query("equilibre")):
-    top_items = sorted(DATA_CACHE, key=lambda x: x['score'], reverse=True)[:5]
+def get_markowitz_allocation(risk_profile: str = Query("equilibre"), account_type: str = Query("CTO")):
+    dataset = DATA_CACHE
+    if account_type == "PEA":
+        dataset = [x for x in DATA_CACHE if x.get("pea") == True]
+        
+    top_items = sorted(dataset, key=lambda x: x['score'], reverse=True)[:5]
     if not top_items: return {"allocation": []}
     
     weights = [0.35, 0.25, 0.2, 0.1, 0.1]
@@ -212,9 +214,10 @@ def get_markowitz_allocation(risk_profile: str = Query("equilibre")):
             "entreprise": item["entreprise"],
             "ticker": item["ticker"],
             "weight_pct": round(weights[idx] * 100, 1),
-            "score": item["score"]
+            "score": item["score"],
+            "pea": item["pea"]
         })
-    return {"risk_profile": risk_profile, "allocation": allocation}
+    return {"risk_profile": risk_profile, "account_type": account_type, "allocation": allocation}
 
 @app.get("/api/backtest")
 def run_backtest(ticker: str = Query("MC.PA")):
