@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#09090b">
   <link rel="manifest" href="/static/manifest.json">
-  <title>SynapseQuant Terminal - Financial OS</title>
+  <title>SynapseQuant OS - Financial Terminal</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -43,7 +43,7 @@
 
   <div class="max-w-7xl mx-auto px-4 relative z-10">
     
-    <!-- HEADER APP STYLE -->
+    <!-- HEADER -->
     <header class="glass-panel rounded-3xl p-4 mb-4 flex justify-between items-center">
       <div class="flex items-center gap-3">
         <div class="h-10 w-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/30">
@@ -52,75 +52,71 @@
         <div>
           <h1 class="text-xl font-bold tracking-tight">Synapse<span class="text-emerald-400">Quant</span></h1>
           <p class="text-[10px] text-zinc-400 font-mono flex items-center gap-1.5" id="market-mood">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Synthèse des marchés...
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Anayse des Marchés Mondiaux...
           </p>
         </div>
       </div>
       
       <button onclick="triggerSound('pop'); openTelegramModal()" class="px-3.5 py-2 rounded-2xl bg-zinc-900 border border-zinc-700/60 text-sky-400 text-xs font-mono flex items-center gap-2 active:scale-95 transition">
-        <i class="fa-paper-plane"></i> <span class="hidden md:inline">Alertes Telegram</span>
+        <i class="fa-paper-plane"></i> <span class="hidden md:inline">Alertes</span>
       </button>
     </header>
-
-    <!-- RUBAN INDICES MACRO (STYLE APP FINANCIÈRE) -->
-    <section class="mb-5 overflow-x-auto no-scrollbar flex gap-2">
-      <div class="glass-card px-3.5 py-2 rounded-2xl flex items-center gap-2 flex-shrink-0 text-xs font-mono">
-        <span class="text-zinc-500">CAC 40</span>
-        <span class="text-emerald-400 font-bold">7 642 pts</span>
-        <span class="text-[10px] text-emerald-500">+0.4%</span>
-      </div>
-      <div class="glass-card px-3.5 py-2 rounded-2xl flex items-center gap-2 flex-shrink-0 text-xs font-mono">
-        <span class="text-zinc-500">S&P 500</span>
-        <span class="text-emerald-400 font-bold">5 480 pts</span>
-        <span class="text-[10px] text-emerald-500">+0.6%</span>
-      </div>
-      <div class="glass-card px-3.5 py-2 rounded-2xl flex items-center gap-2 flex-shrink-0 text-xs font-mono">
-        <span class="text-zinc-500">VIX (Peur)</span>
-        <span class="text-purple-400 font-bold">15.4</span>
-        <span class="text-[10px] text-zinc-500">(Calme)</span>
-      </div>
-      <div class="glass-card px-3.5 py-2 rounded-2xl flex items-center gap-2 flex-shrink-0 text-xs font-mono">
-        <span class="text-zinc-500">WTI Pétrole</span>
-        <span class="text-amber-400 font-bold">$74.8</span>
-      </div>
-    </section>
 
     <!-- CHARGEMENT -->
     <div id="loading" class="flex flex-col items-center justify-center py-28">
       <i class="fa-solid fa-circle-notch fa-spin text-4xl text-indigo-500 mb-4"></i>
-      <p class="text-xs text-zinc-400 font-mono tracking-widest uppercase">Inférence IA & Extraction des Marchés...</p>
+      <p class="text-xs text-zinc-400 font-mono tracking-widest uppercase">Analyse Multi-Marchés & Inférence IA...</p>
     </div>
 
-    <!-- ONGLET 1 : ACCUEIL & SIGNAUX IA -->
-    <div id="tab-opportunites" class="tab-content hidden space-y-5 tab-active">
-      <div class="glass-panel rounded-3xl p-5 flex justify-between items-center">
-        <div>
-          <h2 class="text-xs font-bold text-zinc-300 uppercase tracking-wider"><i class="fa-solid fa-radar text-emerald-400 mr-2"></i>Dashboard Général & Signaux IA</h2>
-          <p class="text-[10px] text-zinc-500 mt-0.5">Maintien d'appui sur une carte = Mode Rayons-X</p>
-        </div>
-        <div class="text-right">
-          <span class="text-3xl font-bold text-emerald-400 font-mono" id="stat-signals">0</span>
-          <p class="text-[9px] text-zinc-500 font-mono uppercase">Convictions Fortes</p>
+    <!-- ONGLET 1 : ACCUEIL & SCREENER SECTORIEL -->
+    <div id="tab-opportunites" class="tab-content hidden space-y-4 tab-active">
+      
+      <!-- BARRE DE FILTRES SECTORIELS & THÉMATIQUES -->
+      <div class="glass-panel rounded-2xl p-3 space-y-2">
+        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-xs font-mono" id="sector-filters">
+          <button onclick="filterSector('ALL')" class="sector-btn px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold whitespace-nowrap">Tous les Marchés</button>
+          <button onclick="filterSector('Tech')" class="sector-btn px-3 py-1.5 rounded-xl bg-zinc-900 text-zinc-400 whitespace-nowrap border border-zinc-800">Tech & IA</button>
+          <button onclick="filterSector('Luxe')" class="sector-btn px-3 py-1.5 rounded-xl bg-zinc-900 text-zinc-400 whitespace-nowrap border border-zinc-800">Luxe</button>
+          <button onclick="filterSector('Finance')" class="sector-btn px-3 py-1.5 rounded-xl bg-zinc-900 text-zinc-400 whitespace-nowrap border border-zinc-800">Finance</button>
+          <button onclick="filterSector('Énergie')" class="sector-btn px-3 py-1.5 rounded-xl bg-zinc-900 text-zinc-400 whitespace-nowrap border border-zinc-800">Énergie</button>
+          <button onclick="filterSector('Santé')" class="sector-btn px-3 py-1.5 rounded-xl bg-zinc-900 text-zinc-400 whitespace-nowrap border border-zinc-800">Santé</button>
         </div>
       </div>
-      
+
       <div id="grid-opportunites" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
     </div>
 
-    <!-- ONGLET 2 : VISION (GRAPHIQUES TRADINGVIEW POUR TOUTES LES ACTIONS) -->
+    <!-- ONGLET 2 : OPTIMISATEUR MARKOWITZ & MATRICE DE CORRÉLATION -->
+    <div id="tab-markowitz" class="tab-content hidden space-y-5 tab-active">
+      <div class="glass-panel rounded-3xl p-6">
+        <h2 class="text-base font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-emerald-400"></i>Optimisation de Portefeuille Markowitz</h2>
+        <p class="text-xs text-zinc-400 mb-5">Allocation idéale du capital calculée pour maximiser le ratio de Sharpe selon votre tolérance au risque.</p>
+        
+        <div class="flex gap-2 mb-6">
+          <button onclick="loadMarkowitz('defensif')" class="risk-btn px-4 py-2 bg-zinc-900 text-zinc-300 rounded-xl text-xs font-mono border border-zinc-700 w-full">Prudent</button>
+          <button onclick="loadMarkowitz('equilibre')" class="risk-btn px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs font-mono border border-indigo-500 w-full">Équilibré</button>
+          <button onclick="loadMarkowitz('offensif')" class="risk-btn px-4 py-2 bg-zinc-900 text-zinc-300 rounded-xl text-xs font-mono border border-zinc-700 w-full">Offensif</button>
+        </div>
+
+        <div id="markowitz-results" class="space-y-3 font-mono text-xs"></div>
+      </div>
+
+      <div class="glass-panel rounded-3xl p-6">
+        <h3 class="text-xs font-bold text-zinc-300 uppercase tracking-wider mb-4"><i class="fa-solid fa-table-cells text-indigo-400 mr-2"></i>Matrice de Corrélation & Risque de Concentration</h3>
+        <div id="correlation-matrix" class="overflow-x-auto text-xs font-mono"></div>
+      </div>
+    </div>
+
+    <!-- ONGLET 3 : VISION (GRAPHIQUES TRADINGVIEW) -->
     <div id="tab-chart" class="tab-content hidden space-y-4 tab-active">
       <div class="glass-panel rounded-3xl p-4">
-        <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-chart-candlestick text-indigo-400 mr-2"></i>Sélectionner une action (Toutes les valeurs)</h3>
-        <!-- SELECTEUR DYNAMIQUE POUR TOUT L'UNIVERS -->
         <div class="flex gap-2 mb-4 overflow-x-auto pb-2 no-scrollbar" id="chart-ticker-selector"></div>
         <div id="tv-chart-container" class="h-[480px] w-full rounded-2xl overflow-hidden border border-zinc-800"></div>
       </div>
     </div>
 
-    <!-- ONGLET 3 : PAPER TRADING & ACTUALITÉS FUSIONNÉS -->
+    <!-- ONGLET 4 : PAPER TRADING & ACTUALITÉS -->
     <div id="tab-portfolio" class="tab-content hidden space-y-5 tab-active">
-      
-      <!-- PARTIE 1 : PORTEFEUILLE VIRTUEL -->
       <div class="glass-panel rounded-3xl p-6">
         <div class="flex justify-between items-center mb-6">
           <div>
@@ -134,47 +130,13 @@
         <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Positions Virtuelles Ouvertes</h3>
         <div id="portfolio-positions" class="space-y-3 font-mono text-xs mb-6"></div>
       </div>
-
-      <!-- PARTIE 2 : FLUX D'ACTUALITÉS BOURSIÈRES & SENTIMENT -->
-      <div class="glass-panel rounded-3xl p-6">
-        <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-newspaper text-indigo-400"></i>Actualités Boursières & Impact IA</h3>
-        <div class="space-y-3">
-          <div class="glass-card p-4 rounded-2xl flex gap-3.5 items-start">
-            <div class="w-9 h-9 rounded-xl bg-emerald-950 border border-emerald-700/50 flex items-center justify-center text-emerald-400 flex-shrink-0 text-sm"><i class="fa-solid fa-microchip"></i></div>
-            <div>
-              <div class="flex items-center gap-2 mb-1">
-                <span class="px-2 py-0.5 rounded bg-zinc-800 text-[9px] font-mono text-indigo-300">TECH & IA</span>
-                <span class="text-[9px] text-zinc-500 font-mono">Il y a 1h</span>
-              </div>
-              <h4 class="text-xs font-semibold text-zinc-100">Dépenses record en Semi-conducteurs : ASML et Nvidia en hausse</h4>
-              <p class="text-[11px] text-zinc-400 mt-1">Impact positif direct validé par l'algorithme sur les objectifs d'ASML et Nvidia.</p>
-            </div>
-          </div>
-
-          <div class="glass-card p-4 rounded-2xl flex gap-3.5 items-start">
-            <div class="w-9 h-9 rounded-xl bg-indigo-950 border border-indigo-700/50 flex items-center justify-center text-indigo-400 flex-shrink-0 text-sm"><i class="fa-solid fa-gem"></i></div>
-            <div>
-              <div class="flex items-center gap-2 mb-1">
-                <span class="px-2 py-0.5 rounded bg-zinc-800 text-[9px] font-mono text-zinc-300">LUXE</span>
-                <span class="text-[9px] text-zinc-500 font-mono">Il y a 3h</span>
-              </div>
-              <h4 class="text-xs font-semibold text-zinc-100">Rebond des ventes en Asie pour LVMH et Hermès</h4>
-              <p class="text-[11px] text-zinc-400 mt-1">Les ratios de rentabilité (ROE > 18%) renforcent le signal d'achat sur les valeurs du luxe français.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
 
-    <!-- ONGLET 4 : QUANT (BACKTEST & MONTE-CARLO POUR TOUTES LES ACTIONS) -->
+    <!-- ONGLET 5 : QUANT (BACKTEST & MONTE-CARLO) -->
     <div id="tab-backtest" class="tab-content hidden space-y-5 tab-active">
       <div class="glass-panel rounded-3xl p-6">
-        <h2 class="text-base font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-calculator text-indigo-400"></i>Laboratoire Quantitatif (Monte-Carlo & Backtest)</h2>
-        <p class="text-xs text-zinc-400 mb-4">Sélectionnez n'importe quelle action de l'univers pour lancer la simulation.</p>
-        
-        <div class="flex gap-2 mb-5">
-          <!-- SELECTEUR DYNAMIQUE REMPLI DEPUIS L'API -->
+        <h2 class="text-base font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-calculator text-indigo-400"></i>Backtesting & Simulations Monte-Carlo</h2>
+        <div class="flex gap-2 my-5">
           <select id="backtest-select" class="bg-zinc-900 text-white font-mono text-xs border border-zinc-700 p-3 rounded-2xl w-full">
             <option value="">Chargement des actions...</option>
           </select>
@@ -203,19 +165,23 @@
   <nav class="fixed bottom-0 left-0 w-full bg-zinc-950/90 backdrop-blur-2xl border-t border-zinc-800/80 z-40">
     <div class="flex justify-around items-center py-3 max-w-md mx-auto text-center">
       <button onclick="triggerSound('click'); switchTab('opportunites')" id="nav-opportunites" class="nav-btn flex flex-col items-center text-emerald-400 active:scale-95 transition">
-        <i class="fa-solid fa-house text-xl mb-0.5"></i>
-        <span class="text-[9px] font-bold uppercase">Accueil</span>
+        <i class="fa-solid fa-house text-lg mb-0.5"></i>
+        <span class="text-[9px] font-bold uppercase">Marchés</span>
+      </button>
+      <button onclick="triggerSound('click'); switchTab('markowitz')" id="nav-markowitz" class="nav-btn flex flex-col items-center text-zinc-500 active:scale-95 transition">
+        <i class="fa-solid fa-chart-pie text-lg mb-0.5"></i>
+        <span class="text-[9px] font-bold uppercase">Markowitz</span>
       </button>
       <button onclick="triggerSound('click'); switchTab('chart')" id="nav-chart" class="nav-btn flex flex-col items-center text-zinc-500 active:scale-95 transition">
-        <i class="fa-solid fa-chart-candlestick text-xl mb-0.5"></i>
+        <i class="fa-solid fa-chart-candlestick text-lg mb-0.5"></i>
         <span class="text-[9px] font-bold uppercase">Vision</span>
       </button>
       <button onclick="triggerSound('click'); switchTab('portfolio')" id="nav-portfolio" class="nav-btn flex flex-col items-center text-zinc-500 active:scale-95 transition">
-        <i class="fa-solid fa-wallet text-xl mb-0.5"></i>
-        <span class="text-[9px] font-bold uppercase">Paper & Actus</span>
+        <i class="fa-solid fa-wallet text-lg mb-0.5"></i>
+        <span class="text-[9px] font-bold uppercase">Paper</span>
       </button>
       <button onclick="triggerSound('click'); switchTab('backtest')" id="nav-backtest" class="nav-btn flex flex-col items-center text-zinc-500 active:scale-95 transition">
-        <i class="fa-solid fa-microchip text-xl mb-0.5"></i>
+        <i class="fa-solid fa-microchip text-lg mb-0.5"></i>
         <span class="text-[9px] font-bold uppercase">Quant</span>
       </button>
     </div>
@@ -223,9 +189,11 @@
 
   <script>
     let globalData = [];
-    let currentChartTicker = "MC.PA";
+    let currentSectorFilter = 'ALL';
+    let currentChartTicker = "NVDA";
     let portfolio = JSON.parse(localStorage.getItem("paper_portfolio")) || { cash: 10000, positions: [] };
 
+    // RETOUR AUDIO SYNTHÉTIQUE
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function triggerSound(type) {
       if (navigator.vibrate) navigator.vibrate(15);
@@ -233,8 +201,7 @@
       
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      osc.connect(gain); gain.connect(audioCtx.destination);
       
       if (type === 'click') {
         osc.frequency.setValueAtTime(400, audioCtx.currentTime);
@@ -249,6 +216,11 @@
       }
     }
 
+    // ENREGISTREMENT SERVICE WORKER (PWA OFFLINE RESILIENCE)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+    }
+
     // CHARGEMENT INITIAL DES DONNÉES
     fetch('/api/data')
       .then(res => res.json())
@@ -256,14 +228,9 @@
         globalData = data;
         document.getElementById('loading').style.display = 'none';
         
-        // Mise à jour de l'humeur du marché (Moyenne IA)
-        const avgScore = globalData.reduce((acc, i) => acc + i.score, 0) / globalData.length;
-        const moodText = avgScore >= 1.2 ? "Marché : Fortement Haussier" : (avgScore >= 0.9 ? "Marché : Neutre / Favorable" : "Marché : Prudence");
-        document.getElementById('market-mood').innerHTML = `<span class="w-2 h-2 rounded-full ${avgScore>=1.2?'bg-emerald-500':'bg-amber-500'} animate-pulse"></span> ${moodText}`;
-
         switchTab('opportunites');
         setupChartSelectors();
-        populateQuantSelect(); // Remplissage dynamique du selecteur Quant
+        populateQuantSelect();
         renderPortfolio();
       });
 
@@ -275,8 +242,15 @@
       document.getElementById('nav-' + tabId).classList.add('text-emerald-400');
 
       if(tabId === 'opportunites') renderSignals();
+      if(tabId === 'markowitz') { loadMarkowitz('equilibre'); loadCorrelation(); }
       if(tabId === 'chart') loadTradingViewWidget(currentChartTicker);
       if(tabId === 'backtest') runQuantSimulations();
+    }
+
+    function filterSector(sector) {
+      triggerSound('click');
+      currentSectorFilter = sector;
+      renderSignals();
     }
 
     function flipCard(cardId) {
@@ -287,26 +261,37 @@
     function renderSignals() {
       const grid = document.getElementById('grid-opportunites');
       grid.innerHTML = '';
-      let opps = globalData.sort((a,b) => b.score - a.score);
-      document.getElementById('stat-signals').innerText = opps.filter(i => i.score >= 1.2).length;
+      
+      let filtered = currentSectorFilter === 'ALL' ? globalData : globalData.filter(i => i.sector === currentSectorFilter);
+      let opps = filtered.sort((a,b) => b.score - a.score);
+      
+      document.getElementById('stat-signals').innerText = globalData.filter(i => i.score >= 1.2).length;
 
       opps.forEach((item, index) => {
         const recColor = item.score >= 1.4 ? 'emerald' : (item.score >= 1.0 ? 'cyan' : 'amber');
         const recText = item.score >= 1.4 ? 'ACHETER FORT' : (item.score >= 1.0 ? 'ACHETER' : 'CONSERVER');
         const cardId = `card-${index}`;
 
+        // Badge pattern chartiste s'il y en a un
+        const patternBadge = item.patterns && item.patterns.length > 0 
+          ? `<span class="px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-700/50 text-[9px] font-mono"><i class="fa-solid fa-chart-line mr-1"></i>${item.patterns[0]}</span>`
+          : '';
+
         grid.innerHTML += `
-          <div class="perspective-1000 h-[360px] cursor-pointer" onclick="flipCard('${cardId}')">
+          <div class="perspective-1000 h-[370px] cursor-pointer" onclick="flipCard('${cardId}')">
             <div id="${cardId}" class="card-inner w-full h-full relative">
               
               <div class="card-front absolute inset-0 glass-card rounded-3xl p-5 flex flex-col justify-between">
                 <div>
                   <div class="flex justify-between items-start mb-2">
                     <span class="text-[9px] font-mono text-${recColor}-400 font-bold uppercase tracking-wider">${recText}</span>
-                    <span class="text-[9px] text-zinc-500 font-mono">Tap = Rayons-X <i class="fa-solid fa-rotate mr-1"></i></span>
+                    ${patternBadge}
                   </div>
                   <h3 class="text-xl font-bold text-white">${item.entreprise}</h3>
-                  <span class="text-[10px] font-mono text-zinc-400">${item.ticker}</span>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="text-[10px] font-mono text-zinc-400">${item.ticker}</span>
+                    <span class="px-2 py-0.5 rounded bg-zinc-900 text-zinc-500 text-[9px] font-mono">${item.sector}</span>
+                  </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 font-mono">
@@ -332,7 +317,7 @@
                     <div class="flex justify-between"><span>RSI (14j):</span><span class="text-indigo-400">${item.rsi}</span></div>
                     <div class="flex justify-between"><span>SMA 200:</span><span class="text-zinc-200">€${item.sma200}</span></div>
                     <div class="flex justify-between"><span>ROE:</span><span class="text-emerald-400">${(item.roe*100).toFixed(1)}%</span></div>
-                    <div class="flex justify-between"><span>Cible Analystes:</span><span class="text-zinc-200">€${item.target}</span></div>
+                    <div class="flex justify-between"><span>Secteur:</span><span class="text-zinc-200">${item.sector}</span></div>
                   </div>
                 </div>
                 <div class="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800 text-[10px] text-zinc-400 leading-relaxed">
@@ -346,7 +331,57 @@
       });
     }
 
-    // REMPLISSAGE DYNAMIQUE DES ACTIONS DANS L'ONGLET VISION
+    // MARKOWITZ ALLOCATION LOGIC
+    function loadMarkowitz(profile) {
+      triggerSound('click');
+      const div = document.getElementById('markowitz-results');
+      div.innerHTML = `<div class="text-center py-4 text-zinc-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Calcul de l'allocation optimale...</div>`;
+      
+      fetch(`/api/markowitz?risk_profile=${profile}`)
+        .then(r => r.json())
+        .then(res => {
+          div.innerHTML = '';
+          res.allocation.forEach(item => {
+            div.innerHTML += `
+              <div class="glass-card p-3 rounded-2xl flex justify-between items-center">
+                <div>
+                  <span class="font-bold text-white">${item.entreprise}</span>
+                  <span class="text-[10px] text-zinc-500 block">${item.ticker}</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-emerald-400 font-bold text-sm block">${item.weight_pct}% du capital</span>
+                  <span class="text-[9px] text-zinc-500">Score IA: ${item.score}</span>
+                </div>
+              </div>
+            `;
+          });
+        });
+    }
+
+    function loadCorrelation() {
+      fetch('/api/correlation')
+        .then(r => r.json())
+        .then(res => {
+          if(res.error) return;
+          const div = document.getElementById('correlation-matrix');
+          let html = `<table class="w-full text-center border-collapse"><thead><tr><th></th>`;
+          res.tickers.forEach(t => { html += `<th class="p-2 text-indigo-400">${t}</th>`; });
+          html += `</tr></thead><tbody>`;
+          
+          res.tickers.forEach(t1 => {
+            html += `<tr><td class="p-2 font-bold text-zinc-300 text-left">${t1}</td>`;
+            res.tickers.forEach(t2 => {
+              const val = res.matrix[t1][t2];
+              const color = val > 0.7 ? 'text-rose-400 font-bold' : (val < 0.3 ? 'text-emerald-400' : 'text-zinc-400');
+              html += `<td class="p-2 ${color}">${val}</td>`;
+            });
+            html += `</tr>`;
+          });
+          html += `</tbody></table>`;
+          div.innerHTML = html;
+        });
+    }
+
     function setupChartSelectors() {
       const container = document.getElementById('chart-ticker-selector');
       container.innerHTML = '';
@@ -368,7 +403,6 @@
       });
     }
 
-    // REMPLISSAGE DYNAMIQUE DES ACTIONS DANS L'ONGLET QUANT
     function populateQuantSelect() {
       const select = document.getElementById('backtest-select');
       select.innerHTML = '';
@@ -377,7 +411,6 @@
       });
     }
 
-    // PAPER TRADING LOGIC
     function buyPaperTrade(ticker, price) {
       if(portfolio.cash < price) return alert("Capital virtuel insuffisant !");
       portfolio.cash -= price;
@@ -425,7 +458,6 @@
       renderPortfolio();
     }
 
-    // QUANT SIMULATION LOGIC
     function runQuantSimulations() {
       const ticker = document.getElementById('backtest-select').value;
       if(!ticker) return;
