@@ -10,65 +10,145 @@ from sklearn.ensemble import RandomForestClassifier
 import joblib
 import os
 import threading
+import logging
 
-app = FastAPI(title="Terminal Quantitatif ML")
+# Configuration des logs
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("QuantEngine")
 
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app = FastAPI(title="SynapseQuant Engine - Terminal Pro")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Univers d'investissements
 TICKERS = {
     "LVMH": "MC.PA", "TotalEnergies": "TTE.PA", "BNP Paribas": "BNP.PA", "Apple": "AAPL",
     "Microsoft": "MSFT", "ASML": "ASML.AS", "JPMorgan": "JPM", "ExxonMobil": "XOM"
 }
 
+# Tickers Macro & Matières Premières
+MACRO_TICKERS = {
+    "Oil": "CL=F",      # Pétrole WTI
+    "Gold": "GC=F",     # Or
+    "VIX": "^VIX",      # Indice de peur / Volatilité
+    "US10Y": "^TNX"     # Taux 10 ans US
+}
+
 MODEL_PATH = "ml_model.pkl"
 
+def compute_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
+    """Calcule les indicateurs techniques clés (RSI, MACD, Volatilité, Ratios)."""
+    df = df.copy()
+    
+    # Moyennes Mobiles
+    df['SMA50'] = df['Close'].rolling(50).mean()
+    df['SMA200'] = df['Close'].rolling(200).mean()
+    
+    # RSI (14 jours)
+    delta = df['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+    rs = gain / (loss + 1e-9)
+    df['RSI'] = 100 - (100 / (1 + rs))
+    
+    # MACD (12, 26)
+    ema12 = df['Close'].ewm(span=12, adjust=False).mean()
+    ema26 = df['Close'].ewm(span=26, adjust=False).mean()
+    df['MACD'] = ema12 - ema26
+    
+    # Volatilité historique (std des rendements sur 20j)
+    df['Returns'] = df['Close'].pct_change()
+    df['Volatility'] = df['Returns'].rolling(20).std()
+    
+    # Ratio de Volume (Volume du jour / Moyenne 50j)
+    df['Vol_Ratio'] = df['Volume'] / (df['Volume'].rolling(50).mean() + 1e-9)
+    
+    return df
+
 def train_model():
-    """Fonction d'apprentissage continu : s'exécute en arrière-plan chaque nuit"""
-    print("Démarrage de l'entraînement ML...")
+    """Entraînement Machine Learning multi-factoriel (Technique + Macro)."""
+    logger.info("Démarrage de l'entraînement quantitatif du modèle ML...")
     dataset = []
     labels = []
     
+    try:
+        # 1. Extraction des séries Macro/Matières premières
+        macro_data = {}
+        for key, sym in MACRO_TICKERS.items():
+            h = yf.Ticker(sym).history(period="2y")
+            if not h.empty:
+                macro_data[key] = h['Close']
+        macro_df = pd.DataFrame(macro_data).ffill().bfill()
+    except Exception as e:
+        logger.error(f"Erreur lors du téléchargement des données Macro: {e}")
+        macro_df = pd.DataFrame()
+
+    # 2. Construction du Dataset d'entraînement pour chaque action
     for name, symbol in TICKERS.items():
         try:
             stock = yf.Ticker(symbol)
             hist = stock.history(period="2y")
-            if len(hist) < 200: continue
+            if len(hist) < 200:
+                continue
             
-            # Création de données d'entraînement synthétiques basées sur l'historique
-            # Dans un cas réel, on décale les prix pour prédire J+30
-            hist['SMA50'] = hist['Close'].rolling(50).mean()
-            hist['SMA200'] = hist['Close'].rolling(200).mean()
+            hist = compute_technical_indicators(hist)
+            
+            # Alignement temporel des données Macro avec l'action
+            if not macro_df.empty:
+                hist = hist.join(macro_df, how='left').ffill().bfill()
+            else:
+                hist['Oil'] = 75.0
+                hist['VIX'] = 18.0
+
             hist = hist.dropna()
             
+            # Cible (Target) : Hausse de +2% à un horizon de 15 jours de bourse
+            hist['Target'] = np.where(hist['Close'].shift(-15) > hist['Close'] * 1.02, 1, 0)
+            
             for index, row in hist.iterrows():
-                # Features techniques historiques simplifiées
+                # Matrice de Features (8 variables d'entrée)
                 features = [
-                    row['Close'] / row['SMA50'], 
-                    row['Close'] / row['SMA200'],
-                    row['Volume']
+                    row['Close'] / (row['SMA50'] + 1e-9),
+                    row['Close'] / (row['SMA200'] + 1e-9),
+                    row['RSI'] / 100.0,
+                    row['Volatility'] if not np.isnan(row['Volatility']) else 0.01,
+                    row['Vol_Ratio'] if not np.isnan(row['Vol_Ratio']) else 1.0,
+                    row['MACD'],
+                    row['Oil'] / 100.0,
+                    row['VIX'] / 50.0
                 ]
-                # Label : 1 si le prix a monté le jour suivant, 0 sinon
-                # (Simplification pour l'exemple d'architecture)
                 dataset.append(features)
-                labels.append(1 if row['Close'] > row['Open'] else 0)
-        except:
+                labels.append(row['Target'])
+        except Exception as e:
+            logger.error(f"Erreur traitement entraînement pour {symbol}: {e}")
             continue
 
     if dataset:
-        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        # Modèle Random Forest robuste (300 arbres, profondeur limitée pour éviter le surapprentissage)
+        model = RandomForestClassifier(
+            n_estimators=300, 
+            max_depth=10, 
+            min_samples_leaf=5, 
+            random_state=42
+        )
         model.fit(dataset, labels)
         joblib.dump(model, MODEL_PATH)
-        print("Modèle ré-entraîné et sauvegardé avec succès.")
+        logger.info("Modèle ML ré-entraîné et sauvegardé avec succès.")
 
-# Planificateur de tâches : Entraînement tous les jours à 23h00
+# Planificateur de tâches : Re-entraînement quotidien à 23h00
 scheduler = BackgroundScheduler()
 scheduler.add_job(train_model, 'cron', hour=23, minute=0)
 scheduler.start()
 
 @app.on_event("startup")
 def startup_event():
-    """Lance un premier entraînement asynchrone si aucun modèle n'existe"""
+    """Initialisation au démarrage du serveur."""
     if not os.path.exists(MODEL_PATH):
         threading.Thread(target=train_model).start()
 
@@ -80,42 +160,81 @@ def read_root():
 def get_ml_data():
     results = []
     
-    # Chargement du modèle s'il existe
+    # Chargement du modèle Random Forest
     model = joblib.load(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
+
+    # Extraction des données Macro en direct
+    latest_oil = 75.0
+    latest_vix = 18.0
+    try:
+        oil_hist = yf.Ticker(MACRO_TICKERS["Oil"]).history(period="5d")
+        vix_hist = yf.Ticker(MACRO_TICKERS["VIX"]).history(period="5d")
+        if not oil_hist.empty: latest_oil = oil_hist['Close'].iloc[-1]
+        if not vix_hist.empty: latest_vix = vix_hist['Close'].iloc[-1]
+    except Exception as e:
+        logger.warning(f"Impossible de récupérer les données Macro Live: {e}")
 
     for name, symbol in TICKERS.items():
         try:
             stock = yf.Ticker(symbol)
             info = stock.info
+            hist = stock.history(period="1y")
             
-            # Extraction des fondamentaux inter-sectoriels
-            prix = info.get('currentPrice', info.get('regularMarketPrice', 0))
-            sma50 = info.get('fiftyDayAverage', 0)
-            sma200 = info.get('twoHundredDayAverage', 0)
-            peg = info.get('pegRatio', 0) # Croissance (Tech)
-            pb = info.get('priceToBook', 0) # Valorisation (Banque)
-            dte = info.get('debtToEquity', 0) # Risque (Industrie)
-            roe = info.get('returnOnEquity', 0)
-            target = info.get('targetMeanPrice', 0)
+            if hist.empty:
+                continue
+
+            hist = compute_technical_indicators(hist)
+            last_row = hist.iloc[-1]
             
-            score_ia = 0
-            if model and sma50 and sma200:
-                # Prédiction via le modèle ML entraîné
-                features_live = [[prix / sma50, prix / sma200, info.get('averageVolume', 0)]]
-                proba = model.predict_proba(features_live)[0][1] # Probabilité de hausse
-                score_ia = round(proba * 2.0, 2) # Mise à l'échelle sur 2.0
+            prix = info.get('currentPrice', info.get('regularMarketPrice', last_row['Close']))
+            sma50 = last_row['SMA50'] if not np.isnan(last_row['SMA50']) else prix
+            sma200 = last_row['SMA200'] if not np.isnan(last_row['SMA200']) else prix
+            
+            peg = info.get('pegRatio', 0) or 0
+            pb = info.get('priceToBook', 0) or 0
+            roe = info.get('returnOnEquity', 0) or 0
+            target = info.get('targetMeanPrice', 0) or (prix * 1.1)
+            
+            score_ia = 1.0 # Score neutre par défaut
+            
+            if model and not np.isnan(sma50) and not np.isnan(sma200):
+                features_live = [[
+                    prix / (sma50 + 1e-9),
+                    prix / (sma200 + 1e-9),
+                    (last_row['RSI'] if not np.isnan(last_row['RSI']) else 50.0) / 100.0,
+                    last_row['Volatility'] if not np.isnan(last_row['Volatility']) else 0.01,
+                    last_row['Vol_Ratio'] if not np.isnan(last_row['Vol_Ratio']) else 1.0,
+                    last_row['MACD'] if not np.isnan(last_row['MACD']) else 0.0,
+                    latest_oil / 100.0,
+                    latest_vix / 50.0
+                ]]
+                # Probabilité prédite par l'IA de faire +2% à 15 jours
+                proba = model.predict_proba(features_live)[0][1]
+                score_ia = round(proba * 2.0, 2)
+                
+                # Pondération fondamentale (post-filtrage prudentif)
+                if roe > 0.15: score_ia = min(2.0, score_ia + 0.1)
+                if peg > 0 and peg < 1.0: score_ia = min(2.0, score_ia + 0.1)
+                if pb > 5.0: score_ia = max(0.0, score_ia - 0.15)
             else:
-                # Score de secours algorithmique
-                if prix > sma200: score_ia += 0.5
-                if roe and roe > 0.15: score_ia += 0.5
-                if pb and pb < 2: score_ia += 0.5
-            
+                # Calcul algorithmique de secours
+                if prix > sma200: score_ia += 0.3
+                if roe > 0.15: score_ia += 0.3
+                if peg > 0 and peg < 1.2: score_ia += 0.4
+
             results.append({
-                "entreprise": name, "ticker": symbol, "prix": prix,
-                "sma50": sma50, "sma200": sma200, "peg": peg, "pb": pb, 
-                "roe": roe, "target": target, "score": score_ia
+                "entreprise": name,
+                "ticker": symbol,
+                "prix": round(float(prix), 2),
+                "sma50": round(float(sma50), 2),
+                "sma200": round(float(sma200), 2),
+                "peg": round(float(peg), 2),
+                "pb": round(float(pb), 2),
+                "roe": round(float(roe), 4),
+                "target": round(float(target), 2),
+                "score": round(float(score_ia), 2)
             })
         except Exception as e:
-            print(f"Erreur extraction {symbol}")
+            logger.error(f"Erreur traitement Live pour {symbol}: {e}")
             
     return results
