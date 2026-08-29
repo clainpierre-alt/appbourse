@@ -1,98 +1,25 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Terminal ML Quantitatif</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-slate-900 text-slate-100 p-4 font-sans antialiased">
-  
-  <div class="max-w-7xl mx-auto">
-    <div class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
-      <h1 class="text-3xl font-bold text-indigo-400"><i class="fa-solid fa-brain mr-2"></i> Trading Quantitatif</h1>
-    </div>
-
-    <div class="flex gap-4 mb-6">
-      <input type="text" id="searchInput" placeholder="Filtrer une action..." class="flex-1 bg-slate-800 text-white p-2 rounded-lg border border-slate-700 focus:outline-none">
-      <select id="sortSelect" class="bg-slate-800 text-white p-2 rounded-lg border border-slate-700">
-        <option value="score">🎯 Top Signaux IA</option>
-        <option value="perf">Performance Globale</option>
-      </select>
-    </div>
-
-    <div id="loading" class="text-center text-slate-400 py-10">
-      <i class="fa-solid fa-gear fa-spin text-2xl mb-2"></i>
-      <p>Extraction des tenseurs de marché en cours...</p>
-    </div>
-    
-    <div id="grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 hidden"></div>
-  </div>
-
-  <script>
-    let globalData = [];
-
-    fetch('/api/data')
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('grid').classList.remove('hidden');
-        globalData = data;
-        displayCards();
-      })
-      .catch(error => {
-        document.getElementById('loading').innerHTML = `<p class="text-rose-500">Erreur serveur: ${error}</p>`;
-      });
-
-    function displayCards() {
-      const grid = document.getElementById('grid');
-      grid.innerHTML = ''; 
-      const search = document.getElementById('searchInput').value.toLowerCase();
-      
-      let filtered = globalData.filter(i => i.entreprise.toLowerCase().includes(search));
-      if(document.getElementById('sortSelect').value === 'score') filtered.sort((a, b) => b.score - a.score);
-      else filtered.sort((a, b) => (b.perf || 0) - (a.perf || 0));
-
-      filtered.forEach(item => {
-        const potential = (item.target && item.prix) ? ((item.target - item.prix) / item.prix * 100).toFixed(1) : 0;
-        const scoreColor = item.score >= 1.5 ? 'text-emerald-400' : (item.score >= 1 ? 'text-blue-400' : 'text-slate-400');
-        
-        const card = document.createElement('div');
-        card.className = `bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg`;
-        card.innerHTML = `
+card.innerHTML = `
           <div class="flex justify-between items-start mb-4">
             <h2 class="text-xl font-bold">${item.entreprise} <span class="text-xs text-slate-500 font-mono ml-2">${item.ticker}</span></h2>
-            <div class="${scoreColor} font-bold text-lg"><i class="fa-solid fa-robot"></i> ${item.score}/2.0</div>
+            <div class="${item.score >= 1.2 ? 'text-emerald-400' : 'text-slate-400'} font-bold text-lg">
+              <i class="fa-solid fa-robot"></i> ${item.score}/2.0
+            </div>
           </div>
           
-          <div class="grid grid-cols-2 gap-4 text-sm">
+          <div class="grid grid-cols-2 gap-4 text-sm mb-4">
             <div>
-              <div class="text-slate-400">Prix actuel</div>
+              <div class="text-slate-400">Prix</div>
               <div class="text-xl font-mono">€${item.prix ? item.prix.toFixed(2) : '-'}</div>
             </div>
             <div class="text-right">
-              <div class="text-slate-400">Cible Analystes</div>
+              <div class="text-slate-400">Cible</div>
               <div class="text-xl font-mono text-indigo-300">€${item.target ? item.target.toFixed(2) : '-'}</div>
             </div>
           </div>
 
-          <div class="mt-4 pt-4 border-t border-slate-700">
-            <div class="flex justify-between text-[10px] text-slate-400 mb-2 font-mono">
-              <span>SMA 50: €${item.sma50 ? item.sma50.toFixed(1) : '-'}</span>
-              <span>SMA 200: €${item.sma200 ? item.sma200.toFixed(1) : '-'}</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-xs bg-slate-900 px-2 py-1 rounded border border-slate-700">Marge: ${item.marge ? (item.marge * 100).toFixed(1) : '-'}%</span>
-              <span class="text-xs font-bold ${potential > 10 ? 'text-emerald-400' : 'text-slate-400'}">Potentiel: ${potential > 0 ? '+' : ''}${potential}%</span>
-            </div>
+          <div class="grid grid-cols-3 gap-2 text-[10px] text-slate-300 bg-slate-900 p-2 rounded border border-slate-700">
+            <div class="flex flex-col"><span class="text-slate-500">PEG (Croissance)</span> <span>${item.peg ? item.peg.toFixed(2) : 'N/A'}</span></div>
+            <div class="flex flex-col"><span class="text-slate-500">P/B (Banques)</span> <span>${item.pb ? item.pb.toFixed(2) : 'N/A'}</span></div>
+            <div class="flex flex-col text-right"><span class="text-slate-500">ROE (Rentabilité)</span> <span>${item.roe ? (item.roe * 100).toFixed(1) + '%' : 'N/A'}</span></div>
           </div>
         `;
-        grid.appendChild(card);
-      });
-    }
-
-    document.getElementById('searchInput').addEventListener('input', displayCards);
-    document.getElementById('sortSelect').addEventListener('change', displayCards);
-  </script>
-</body>
-</html>
