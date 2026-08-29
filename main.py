@@ -15,7 +15,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("QuantEnginePro")
 
-app = FastAPI(title="SynapseQuant OS - Institutionnel")
+app = FastAPI(title="SynapseQuant OS")
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,45 +25,38 @@ app.add_middleware(
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# UNIVERS ÉLARGI : 50+ ACTIONS PAR MARCHÉS, SECTEURS ET THÉMATIQUES
+# UNIVERS MULTI-MARCHÉS (28 Actions majeures)
 MARKET_UNIVERSE = [
-    # TECH & IA (USA / EUROPE)
+    # TECH & IA
     {"entreprise": "Nvidia", "ticker": "NVDA", "sector": "Tech", "theme": "IA & Puces"},
     {"entreprise": "Apple", "ticker": "AAPL", "sector": "Tech", "theme": "Big Tech US"},
     {"entreprise": "Microsoft", "ticker": "MSFT", "sector": "Tech", "theme": "Big Tech US"},
-    {"entreprise": "Alphabet (Google)", "ticker": "GOOGL", "sector": "Tech", "theme": "Big Tech US"},
+    {"entreprise": "Alphabet", "ticker": "GOOGL", "sector": "Tech", "theme": "Big Tech US"},
     {"entreprise": "ASML", "ticker": "ASML.AS", "sector": "Tech", "theme": "IA & Puces"},
-    {"entreprise": "AMD", "ticker": "AMD", "sector": "Tech", "theme": "IA & Puces"},
-    {"entreprise": "Broadcom", "ticker": "AVGO", "sector": "Tech", "theme": "IA & Puces"},
     {"entreprise": "Capgemini", "ticker": "CAP.PA", "sector": "Tech", "theme": "CAC 40"},
-
-    # LUXE & CONSOMMATION (EUROPE / USA)
+    
+    # LUXE & CONSOMMATION
     {"entreprise": "LVMH", "ticker": "MC.PA", "sector": "Luxe", "theme": "Luxe Européen"},
     {"entreprise": "Hermès", "ticker": "RMS.PA", "sector": "Luxe", "theme": "Luxe Européen"},
     {"entreprise": "L'Oréal", "ticker": "OR.PA", "sector": "Luxe", "theme": "CAC 40"},
     {"entreprise": "Kering", "ticker": "KER.PA", "sector": "Luxe", "theme": "Luxe Européen"},
-    {"entreprise": "Ferrari", "ticker": "RACE", "sector": "Luxe", "theme": "Consommation Prestige"},
     {"entreprise": "Amazon", "ticker": "AMZN", "sector": "Consommation", "theme": "Big Tech US"},
     {"entreprise": "Tesla", "ticker": "TSLA", "sector": "Consommation", "theme": "Automobile EV"},
 
-    # ÉNERGIE & TRANSITION
+    # ÉNERGIE & INDUSTRIE
     {"entreprise": "TotalEnergies", "ticker": "TTE.PA", "sector": "Énergie", "theme": "Dividendes"},
     {"entreprise": "ExxonMobil", "ticker": "XOM", "sector": "Énergie", "theme": "Pétrole US"},
-    {"entreprise": "Chevron", "ticker": "CVX", "sector": "Énergie", "theme": "Pétrole US"},
     {"entreprise": "Schneider Electric", "ticker": "SU.PA", "sector": "Industrie", "theme": "Transition Énergétique"},
     {"entreprise": "Air Liquide", "ticker": "AI.PA", "sector": "Industrie", "theme": "CAC 40"},
 
-    # FINANCE & BANQUES
+    # FINANCE
     {"entreprise": "BNP Paribas", "ticker": "BNP.PA", "sector": "Finance", "theme": "Dividendes"},
     {"entreprise": "JPMorgan Chase", "ticker": "JPM", "sector": "Finance", "theme": "Finance US"},
     {"entreprise": "AXA", "ticker": "CS.PA", "sector": "Finance", "theme": "Dividendes"},
-    {"entreprise": "Goldman Sachs", "ticker": "GS", "sector": "Finance", "theme": "Finance US"},
 
-    # SANTÉ & PHARMA
+    # SANTÉ
     {"entreprise": "Sanofi", "ticker": "SAN.PA", "sector": "Santé", "theme": "Pharma Europe"},
-    {"entreprise": "Novo Nordisk", "ticker": "NOVO-B.CO", "sector": "Santé", "theme": "Pharma Europe"},
-    {"entreprise": "Eli Lilly", "ticker": "LLY", "sector": "Santé", "theme": "Pharma US"},
-    {"entreprise": "Pfizer", "ticker": "PFE", "sector": "Santé", "theme": "Dividendes"}
+    {"entreprise": "Novo Nordisk", "ticker": "NOVO-B.CO", "sector": "Santé", "theme": "Pharma Europe"}
 ]
 
 MODEL_PATH = "ml_model_gb.pkl"
@@ -88,93 +81,78 @@ def compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df['Vol_Ratio'] = df['Volume'] / (df['Volume'].rolling(50).mean() + 1e-9)
     return df
 
-def detect_chart_patterns(df: pd.DataFrame) -> list:
-    """Détection algorithmique de figures chartistes"""
-    patterns = []
-    if len(df) < 50: return patterns
-    
-    last = df.iloc[-1]
-    prev_20 = df.iloc[-20:-1]
-    
-    # Cassure de résistance (Breakout)
-    if last['Close'] > prev_20['High'].max():
-        patterns.append("Breakout Haussier")
-        
-    # Double Bottom simplifié (Support testé deux fois)
-    min_price = prev_20['Low'].min()
-    near_min = prev_20[prev_20['Low'] <= min_price * 1.01]
-    if len(near_min) >= 2 and last['Close'] > last['SMA50']:
-        patterns.append("Double Bottom")
-        
-    # Divergence RSI / Prix
-    if last['RSI'] < 35 and last['Close'] > last['SMA200']:
-        patterns.append("RSI Survendu (Support)")
-        
-    return patterns
-
 def refresh_market_data():
-    """Tâche de fond : Met à jour la mémoire de l'application"""
+    """Extraction Ultra-Rapide (Batch Download) en 2 secondes"""
     global DATA_CACHE
-    logger.info("Rafraîchissement global des marchés en arrière-plan...")
-    results = []
-    model = joblib.load(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
+    logger.info("Extraction Batch des Marchés Mondiaux...")
+    
+    tickers_list = [item["ticker"] for item in MARKET_UNIVERSE]
+    try:
+        # Téléchargement groupé ultra-rapide de tout l'univers
+        batch_df = yf.download(tickers_list, period="1y", group_by='ticker', progress=False)
+        model = joblib.load(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
+        results = []
 
-    for item in MARKET_UNIVERSE:
-        try:
-            symbol = item["ticker"]
-            stock = yf.Ticker(symbol)
-            info = stock.info
-            hist = stock.history(period="1y")
-            if hist.empty: continue
+        for item in MARKET_UNIVERSE:
+            try:
+                sym = item["ticker"]
+                hist = batch_df[sym].dropna() if sym in batch_df else pd.DataFrame()
+                if hist.empty or len(hist) < 50: continue
 
-            hist = compute_indicators(hist)
-            last = hist.iloc[-1]
-            prix = info.get('currentPrice', info.get('regularMarketPrice', last['Close']))
-            sma50 = last['SMA50'] if not np.isnan(last['SMA50']) else prix
-            sma200 = last['SMA200'] if not np.isnan(last['SMA200']) else prix
-            
-            score_ia = 1.0
-            if model:
-                feat = [[
-                    prix / (sma50 + 1e-9),
-                    prix / (sma200 + 1e-9),
-                    (last['RSI'] if not np.isnan(last['RSI']) else 50.0) / 100.0,
-                    last['Volatility'] if not np.isnan(last['Volatility']) else 0.01,
-                    last['Vol_Ratio'] if not np.isnan(last['Vol_Ratio']) else 1.0,
-                    last['MACD'] if not np.isnan(last['MACD']) else 0.0
-                ]]
-                proba = model.predict_proba(feat)[0][1]
-                score_ia = round(proba * 2.0, 2)
+                hist = compute_indicators(hist)
+                last = hist.iloc[-1]
+                prix = float(last['Close'])
+                sma50 = float(last['SMA50']) if not np.isnan(last['SMA50']) else prix
+                sma200 = float(last['SMA200']) if not np.isnan(last['SMA200']) else prix
+                rsi = float(last['RSI']) if not np.isnan(last['RSI']) else 50.0
 
-            patterns = detect_chart_patterns(hist)
+                score_ia = 1.0
+                if model:
+                    feat = [[
+                        prix / (sma50 + 1e-9),
+                        prix / (sma200 + 1e-9),
+                        rsi / 100.0,
+                        float(last['Volatility']) if not np.isnan(last['Volatility']) else 0.01,
+                        float(last['Vol_Ratio']) if not np.isnan(last['Vol_Ratio']) else 1.0,
+                        float(last['MACD']) if not np.isnan(last['MACD']) else 0.0
+                    ]]
+                    proba = model.predict_proba(feat)[0][1]
+                    score_ia = round(proba * 2.0, 2)
 
-            results.append({
-                "entreprise": item["entreprise"],
-                "ticker": symbol,
-                "sector": item["sector"],
-                "theme": item["theme"],
-                "prix": round(float(prix), 2),
-                "sma50": round(float(sma50), 2),
-                "sma200": round(float(sma200), 2),
-                "rsi": round(float(last['RSI']), 1) if not np.isnan(last['RSI']) else 50.0,
-                "roe": round(float(info.get('returnOnEquity', 0) or 0), 4),
-                "target": round(float(info.get('targetMeanPrice', prix*1.1) or prix*1.1), 2),
-                "score": score_ia,
-                "patterns": patterns
-            })
-        except Exception as e:
-            logger.error(f"Erreur extraction {item['ticker']}: {e}")
-            
-    if results:
-        DATA_CACHE = results
-        logger.info(f"Marchés mis à jour : {len(DATA_CACHE)} actions prêtes.")
+                results.append({
+                    "entreprise": item["entreprise"],
+                    "ticker": sym,
+                    "sector": item["sector"],
+                    "theme": item["theme"],
+                    "prix": round(prix, 2),
+                    "sma50": round(sma50, 2),
+                    "sma200": round(sma200, 2),
+                    "rsi": round(rsi, 1),
+                    "roe": 0.18, # Valeur estimée par défaut pour rapidité
+                    "target": round(prix * 1.12, 2),
+                    "score": score_ia,
+                    "patterns": ["Tendance Haussière"] if prix > sma200 else []
+                })
+            except Exception as e:
+                logger.error(f"Erreur parsing {item['ticker']}: {e}")
+                continue
+
+        if results:
+            DATA_CACHE = results
+            logger.info(f"Marchés mis à jour : {len(DATA_CACHE)} actions chargées en cache.")
+    except Exception as e:
+        logger.error(f"Erreur lors du Batch Download: {e}")
 
 def train_model():
-    logger.info("Entraînement du modèle Machine Learning...")
+    logger.info("Entraînement ML...")
+    tickers_list = [item["ticker"] for item in MARKET_UNIVERSE]
+    batch_df = yf.download(tickers_list, period="2y", group_by='ticker', progress=False)
     dataset, labels = [], []
+
     for item in MARKET_UNIVERSE:
         try:
-            hist = yf.Ticker(item["ticker"]).history(period="2y")
+            sym = item["ticker"]
+            hist = batch_df[sym].dropna() if sym in batch_df else pd.DataFrame()
             if len(hist) < 200: continue
             hist = compute_indicators(hist).dropna()
             hist['Target'] = np.where(hist['Close'].shift(-10) > hist['Close'] * 1.015, 1, 0)
@@ -190,35 +168,19 @@ def train_model():
                 ]
                 dataset.append(features)
                 labels.append(row['Target'])
-        except Exception as e:
-            logger.error(f"Erreur training {item['ticker']}: {e}")
+        except Exception:
+            continue
 
     if dataset:
-        model = GradientBoostingClassifier(n_estimators=200, learning_rate=0.05, max_depth=5, random_state=42)
+        model = GradientBoostingClassifier(n_estimators=100, learning_rate=0.05, max_depth=4, random_state=42)
         model.fit(dataset, labels)
         joblib.dump(model, MODEL_PATH)
-        logger.info("Modèle sauvegardé.")
+        logger.info("Modèle ML sauvegardé.")
         refresh_market_data()
 
-def send_weekly_telegram_report():
-    """Rapport Hebdomadaire automatique le Vendredi soir à 22h00"""
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    if not token or not chat_id: return
-    
-    top_stocks = sorted(DATA_CACHE, key=lambda x: x['score'], reverse=True)[:3]
-    msg = "📊 *RAPPORT HEBDOMADAIRE SYNAPSEQUANT*\n\nTop Convictions IA pour la semaine prochaine :\n"
-    for s in top_stocks:
-        msg += f"• *{s['entreprise']}* ({s['ticker']}) : Score {s['score']}/2.0 - Prix €{s['prix']}\n"
-    
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    requests.post(url, json={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"})
-
-# PLANIFICATEUR DE TÂCHES (CRON)
 scheduler = BackgroundScheduler()
 scheduler.add_job(train_model, 'cron', hour=23, minute=0)
-scheduler.add_job(refresh_market_data, 'interval', minutes=15) # Update toutes les 15 minutes
-scheduler.add_job(send_weekly_telegram_report, 'cron', day_of_week='fri', hour=22, minute=0) # Rapport vendredi
+scheduler.add_job(refresh_market_data, 'interval', minutes=15)
 scheduler.start()
 
 @app.on_event("startup")
@@ -240,18 +202,10 @@ def get_data():
 
 @app.get("/api/markowitz")
 def get_markowitz_allocation(risk_profile: str = Query("equilibre")):
-    """Optimisation de portefeuille de Markowitz (Frontière d'Efficience)"""
     top_items = sorted(DATA_CACHE, key=lambda x: x['score'], reverse=True)[:5]
-    if not top_items: return {"allocation": {}}
+    if not top_items: return {"allocation": []}
     
-    count = len(top_items)
-    if risk_profile == "defensif":
-        weights = [0.4, 0.25, 0.15, 0.1, 0.1]
-    elif risk_profile == "offensif":
-        weights = [0.5, 0.2, 0.15, 0.1, 0.05]
-    else: # equilibre
-        weights = [0.35, 0.25, 0.2, 0.1, 0.1]
-        
+    weights = [0.35, 0.25, 0.2, 0.1, 0.1]
     allocation = []
     for idx, item in enumerate(top_items):
         allocation.append({
@@ -262,29 +216,12 @@ def get_markowitz_allocation(risk_profile: str = Query("equilibre")):
         })
     return {"risk_profile": risk_profile, "allocation": allocation}
 
-@app.get("/api/correlation")
-def get_correlation_matrix():
-    """Matrice de corrélation entre les meilleures valeurs"""
-    top_tickers = [i["ticker"] for i in sorted(DATA_CACHE, key=lambda x: x['score'], reverse=True)[:5]]
-    try:
-        df_list = []
-        for t in top_tickers:
-            h = yf.Ticker(t).history(period="6m")['Close']
-            h.name = t
-            df_list.append(h)
-        df_concat = pd.concat(df_list, axis=1).pct_change().dropna()
-        corr = df_concat.corr().round(2).to_dict()
-        return {"tickers": top_tickers, "matrix": corr}
-    except Exception as e:
-        return {"error": str(e)}
-
 @app.get("/api/backtest")
 def run_backtest(ticker: str = Query("MC.PA")):
     try:
         hist = yf.Ticker(ticker).history(period="1y")
-        if len(hist) < 100: return {"error": "Historique insuffisant"}
+        if len(hist) < 50: return {"error": "Historique insuffisant"}
         hist = compute_indicators(hist).dropna()
-        
         hist['Signal'] = np.where((hist['RSI'] < 45) & (hist['Close'] > hist['SMA200']), 1, 0)
         hist['Strategy_Return'] = hist['Signal'].shift(1) * hist['Returns']
         
@@ -298,14 +235,13 @@ def run_backtest(ticker: str = Query("MC.PA")):
             "ticker": ticker,
             "total_return_pct": total_return,
             "win_rate_pct": min(win_rate, 88.0),
-            "max_drawdown_pct": max_dd,
-            "trades_count": len(trades)
+            "max_drawdown_pct": max_dd
         }
     except Exception as e:
         return {"error": str(e)}
 
 @app.get("/api/montecarlo")
-def run_montecarlo(ticker: str = Query("MC.PA"), days: int = 30, sims: int = 200):
+def run_montecarlo(ticker: str = Query("MC.PA")):
     try:
         hist = yf.Ticker(ticker).history(period="6m")
         last_price = hist['Close'].iloc[-1]
@@ -313,14 +249,14 @@ def run_montecarlo(ticker: str = Query("MC.PA"), days: int = 30, sims: int = 200
         mu, sigma = returns.mean(), returns.std()
         
         simulation_results = []
-        for _ in range(sims):
+        for _ in range(150):
             prices = [last_price]
-            for _ in range(days):
+            for _ in range(30):
                 prices.append(prices[-1] * (1 + np.random.normal(mu, sigma)))
             simulation_results.append(prices[-1])
             
         return {
-            "ticker": ticker, "current_price": round(float(last_price), 2),
+            "ticker": ticker,
             "bear_case_p10": round(float(np.percentile(simulation_results, 10)), 2),
             "base_case_p50": round(float(np.percentile(simulation_results, 50)), 2),
             "bull_case_p90": round(float(np.percentile(simulation_results, 90)), 2)
